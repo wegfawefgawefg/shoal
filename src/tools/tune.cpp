@@ -20,21 +20,30 @@ namespace {
 // one tunable: the field, its step, and the range it may take
 struct TuneParam {
     const char* name;
-    int PlanWeights::*field;
     double step;
     int low;
     int high;
 };
 
 const TuneParam kParams[] = {
-    {"exposure", &PlanWeights::exposure, 12, 10, 300},
-    {"second_hit", &PlanWeights::second_hit, 12, 0, 150},
-    {"capture_reach", &PlanWeights::capture_reach, 250, 0, 8000},
-    {"capture_per_turn", &PlanWeights::capture_per_turn, 70, 0, 3000},
-    {"fight_turns", &PlanWeights::fight_turns, 1, 1, 10},
-    {"fight_share", &PlanWeights::fight_share, 3, 0, 100},
-    {"base_block", &PlanWeights::base_block, 120, 0, 3000},
-    {"idle_funds", &PlanWeights::idle_funds, 5, 0, 80},
+    {"exposure", 6, 0, 300},
+    {"second_hit", 12, 0, 150},
+    {"capture_reach", 250, 0, 8000},
+    {"capture_per_turn", 70, 0, 3000},
+    {"fight_turns", 1, 1, 10},
+    {"fight_share", 8, 0, 300},
+    {"base_block", 120, 0, 3000},
+    {"idle_funds", 5, 0, 80},
+    {"property_base", 300, 0, 10000},
+    {"property_days", 1, 1, 20},
+    {"capture_share", 8, 0, 100},
+    {"value_inf", 6, 40, 250},
+    {"value_mech", 6, 40, 250},
+    {"value_recon", 6, 40, 250},
+    {"value_tank", 6, 40, 250},
+    {"value_md", 6, 40, 250},
+    {"value_art", 6, 40, 250},
+    {"value_aa", 6, 40, 250},
 };
 constexpr int kParamCount = sizeof(kParams) / sizeof(kParams[0]);
 
@@ -55,7 +64,7 @@ PlanWeights ToWeights(const double* theta) {
         if (value > kParams[i].high) {
             value = kParams[i].high;
         }
-        weights.*kParams[i].field = value;
+        SetPlanWeight(&weights, kParams[i].name, value);
     }
     return weights;
 }
@@ -112,7 +121,7 @@ int RunTune(int argc, char** argv) {
     double theta[kParamCount];
     PlanWeights start;
     for (int i = 0; i < kParamCount; i++) {
-        theta[i] = start.*kParams[i].field;
+        theta[i] = *PlanWeightField(&start, kParams[i].name);
     }
     std::uint64_t rng = seed * 0x9e3779b97f4a7c15ull + 7;
     for (int round = 0; round < rounds; round++) {

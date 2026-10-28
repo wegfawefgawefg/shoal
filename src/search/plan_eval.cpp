@@ -118,16 +118,57 @@ const WeightName kWeightNames[] = {
     {"idle_funds", &PlanWeights::idle_funds},
 };
 
+struct EvalWeightName {
+    const char* name;
+    int* (*field)(PlanWeights*);
+};
+
+int* PropertyBase(PlanWeights* w) {
+    return &w->eval.property_base;
+}
+int* PropertyDays(PlanWeights* w) {
+    return &w->eval.property_days;
+}
+int* CaptureShare(PlanWeights* w) {
+    return &w->eval.capture_share;
+}
+
+const EvalWeightName kEvalWeightNames[] = {
+    {"property_base", PropertyBase},
+    {"property_days", PropertyDays},
+    {"capture_share", CaptureShare},
+};
+
 } // namespace
 
-bool SetPlanWeight(PlanWeights* weights, const std::string& name, int value) {
+int* PlanWeightField(PlanWeights* weights, const std::string& name) {
     for (const WeightName& entry : kWeightNames) {
         if (name == entry.name) {
-            weights->*entry.field = value;
-            return true;
+            return &(weights->*entry.field);
         }
     }
-    return false;
+    for (const EvalWeightName& entry : kEvalWeightNames) {
+        if (name == entry.name) {
+            return entry.field(weights);
+        }
+    }
+    // value_<unit>: worth of a unit type in percent of its cost
+    if (name.rfind("value_", 0) == 0) {
+        UnitType type;
+        if (UnitTypeFromShortName(name.substr(6), &type)) {
+            return &weights->eval.unit_value[static_cast<int>(type)];
+        }
+    }
+    return nullptr;
+}
+
+bool SetPlanWeight(PlanWeights* weights, const std::string& name, int value) {
+    int* field = PlanWeightField(weights, name);
+    if (field == nullptr) {
+        return false;
+    }
+    *field = value;
+    return true;
 }
 
 std::string PlanWeightsText(const PlanWeights& weights) {
@@ -137,6 +178,16 @@ std::string PlanWeightsText(const PlanWeights& weights) {
             text += " ";
         }
         text += std::string(entry.name) + "=" + std::to_string(weights.*entry.field);
+    }
+    PlanWeights copy = weights;
+    for (const EvalWeightName& entry : kEvalWeightNames) {
+        text += " " + std::string(entry.name) + "=" + std::to_string(*entry.field(&copy));
+    }
+    for (int type = 0; type < kUnitTypeCount; type++) {
+        if (weights.eval.unit_value[type] != 100) {
+            text += " value_" + std::string(Spec(static_cast<UnitType>(type)).short_name) + "=" +
+                    std::to_string(weights.eval.unit_value[type]);
+        }
     }
     return text;
 }
@@ -201,7 +252,7 @@ int PlanScore(const PlanContext& ctx, const Position& pos) {
     if (pos.result != Result::Ongoing) {
         return ResultScore(pos.result, ctx.side);
     }
-    int score = Evaluate(map, pos, ctx.side);
+    int score = Evaluate(map, pos, ctx.side, ctx.weights.eval);
     if (map.production) {
         // unspent funds are worth a little less than the units they could buy
         score -= pos.funds[ctx.side] * ctx.weights.idle_funds / 100;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "game/position.hpp"
+#include "search/eval.hpp"
 #include "search/threat.hpp"
 
 #include <cstdint>
@@ -24,17 +25,21 @@ inline int TerrainDistance(const DistanceTable& table, MoveType move_type, int f
 }
 
 // the planner's tunable numbers; names are what engine specs use ("plan:w.exposure=80")
+// defaults from the first SPSA run (2026-10-28), +177 elo over the hand-set ones
 struct PlanWeights {
-    int exposure = 100;        // percent of the expected loss to enemy fire counted
+    int exposure = 11;         // percent of the expected loss to enemy fire counted
     int second_hit = 50;       // percent of the second best enemy hit added to the best
-    int capture_reach = 1600;  // a capturer standing next to a property we lack
-    int capture_per_turn = 400; // what each turn of walking to it costs
-    int fight_turns = 4;       // fighters value enemies they can reach within this many turns
-    int fight_share = 12;      // per mille of a fighter's cost, per turn closer than that
-    int base_block = 400;      // our own unit on our base at the end of the turn
-    int idle_funds = 17;       // percent of unspent funds subtracted where bases build
+    int capture_reach = 1375;  // a capturer standing next to a property we lack
+    int capture_per_turn = 295; // what each turn of walking to it costs
+    int fight_turns = 5;       // fighters value enemies they can reach within this many turns
+    int fight_share = 70;      // per mille of a fighter's cost, per turn closer than that
+    int base_block = 173;      // our own unit on our base at the end of the turn
+    int idle_funds = 0;        // percent of unspent funds subtracted where bases build
+    EvalWeights eval;
 };
 
+// the weight called `name` (including eval weights and value_<unit>), or null
+int* PlanWeightField(PlanWeights* weights, const std::string& name);
 bool SetPlanWeight(PlanWeights* weights, const std::string& name, int value);
 std::string PlanWeightsText(const PlanWeights& weights);
 
