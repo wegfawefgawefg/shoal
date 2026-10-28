@@ -1,0 +1,254 @@
+#include "side_panel.hpp"
+
+#include "layout.hpp"
+#include "palette.hpp"
+#include "replay.hpp"
+
+#include <cmath>
+#include <cstdlib>
+
+namespace shoal {
+
+namespace {
+
+// scores at least this big are treated as a won or lost game
+constexpr int kDecisiveEval = 1000000;
+// eval at which the bar is about three quarters full
+constexpr float kEvalBarScale = 12000.0f;
+
+int ArmyValue(const Position& pos, int owner) {
+    int value = 0;
+    for (int i = 0; i < pos.unit_count; i++) {
+        const Unit& unit = pos.units[i];
+        if (unit.owner == owner) {
+            value += Spec(unit.type).cost * DisplayHp(unit.hp) / 10;
+        }
+    }
+    return value;
+}
+
+std::string Thousands(int value) {
+    if (value >= 100000) {
+        return std::to_string(value / 1000) + "k";
+    }
+    if (value >= 1000) {
+        int tenths = (value + 50) / 100;
+        return std::to_string(tenths / 10) + "." + std::to_string(tenths % 10) + "k";
+    }
+    return std::to_string(value);
+}
+
+void DrawPlayerCard(State* state, Rect card, int player, const Position& pos) {
+    const Map& map = state->game.map;
+    bool to_move = pos.side == player && pos.result == Result::Ongoing;
+    FillRoundRect(state->renderer, card, Ui(*state, 6), to_move ? kPanelRaised : kPanel);
+    FillRoundRect(state->renderer, Rect{card.x, card.y, Ui(*state, 5), card.h}, Ui(*state, 3),
+                  to_move ? kPlayer[player] : kPlayerDeep[player]);
+    float x = card.x + Ui(*state, 14);
+    float name_size = Ui(*state, 17);
+    float info_size = Ui(*state, 13);
+    float y = card.y + Ui(*state, 5);
+    DrawText(&state->font, x, y, name_size, kPlayer[player], kPlayerName[player]);
+    float name_w = TextWidth(&state->font, name_size, kPlayerName[player]);
+    std::string who = "player " + std::to_string(player) + (to_move ? "  to move" : "");
+    DrawText(&state->font, x + name_w + Ui(*state, 8), y + Ui(*state, 3), info_size,
+             to_move ? kText : kTextFaint, who);
+    std::string funds = FormatFunds(pos.funds[player]);
+    DrawTextAligned(&state->font, card.x + card.w - Ui(*state, 10), y, name_size, kText, funds,
+                    Align::Right);
+    int props = PropertyCount(pos, map, player);
+    int units = UnitCount(pos, player);
+    std::string info = std::to_string(props) + (props == 1 ? " property   " : " properties   ") +
+                       std::to_string(units) + (units == 1 ? " unit" : " units") + "   army " +
+                       Thousands(ArmyValue(pos, player));
+    DrawText(&state->font, x, y + LineHeight(name_size), info_size, kTextDim, info);
+}
+
+void DrawHeader(State* state) {
+    const Layout& l = state->layout;
+    const Map& map = state->game.map;
+    const Position& pos = state->positions[static_cast<std::size_t>(state->ply)];
+    float title = Ui(*state, 22);
+    float small = Ui(*state, 14);
+    float y = l.header.y;
+    DrawText(&state->font, l.header.x, y, title, kText, map.name.empty() ? "untitled" : map.name);
+    std::string day = "day " + std::to_string(pos.day) + " of " + std::to_string(map.day_limit);
+    DrawTextAligned(&state->font, l.header.x + l.header.w, y + Ui(*state, 4), small, kTextDim, day,
+                    Align::Right);
+    y += LineHeight(title);
+
+    // status: result, or who moves, plus the eval
+    std::string status;
+    Color status_color = kTextDim;
+    if (pos.result != Result::Ongoing) {
+        status = ResultText(pos.result);
+        status_color = pos.result == Result::Win0   ? kPlayer[0]
+                       : pos.result == Result::Win1 ? kPlayer[1]
+                                                    : kText;
+    } else {
+        status = std::string(kPlayerName[pos.side]) + " to move";
+    }
+    if (state->mode == Mode::Play) {
+        status += "   play mode";
+    }
+    DrawText(&state->font, l.header.x, y, small, status_color, status);
+    int eval = 0;
+    if (EvalForPlayer0(*state, state->ply, &eval)) {
+        DrawTextAligned(&state->font, l.header.x + l.header.w, y, small, kText,
+                        "eval " + FormatEval(eval), Align::Right);
+    }
+    y += LineHeight(small) + Ui(*state, 8);
+
+    float card_h = Ui(*state, 48);
+    for (int player = 0; player < 2; player++) {
+        DrawPlayerCard(state, Rect{l.header.x, y, l.header.w, card_h}, player, pos);
+        y += card_h + Ui(*state, 6);
+    }
+}
+
+std::string UnitName(UnitType type) {
+    return std::string(Spec(type).name);
+}
+
+void DrawReport(State* state) {
+    const Layout& l = state->layout;
+    const Map& map = state->game.map;
+    const MoveReport& r = state->report;
+    float size = Ui(*state, 15);
+    float small = Ui(*state, 13);
+    FillRect(state->renderer, Rect{l.report.x, l.report.y, l.report.w, 1}, kPanelLine);
+    float y = l.report.y + Ui(*state, 8);
+    if (!r.valid) {
+        std::string text = state->game.moves.empty() ? "Start position" : "Start of the game";
+        DrawText(&state->font, l.report.x, y, size, kTextDim, text);
+        return;
+    }
+    const Move& m = r.move;
+    std::string head = std::to_string(state->ply) + ".  ";
+    std::string line;
+    std::string detail;
+    switch (m.kind) {
+    case MoveKind::EndTurn:
+        line = "ends the turn";
+        break;
+    case MoveKind::Build:
+        line = "builds " + UnitName(r.mover) + " at " + TileName(map, m.to);
+        detail = "costs " + std::to_string(Spec(r.mover).cost);
+        break;
+    case MoveKind::Wait:
+    case MoveKind::Attack:
+    case MoveKind::Capture:
+        line = UnitName(r.mover) + " " + TileName(map, m.from);
+        if (m.to != m.from) {
+            line += " to " + TileName(map, m.to);
+        } else {
+            line += " holds";
+        }
+        break;
+    }
+    if (r.attack) {
+        detail = "fires at " + UnitName(r.target) + " " + TileName(map, m.target) + ": " +
+                 std::to_string(r.target_hp_before) + " > " + std::to_string(r.target_hp_after);
+        if (r.target_hp_after == 0) {
+            detail += ", destroyed";
+        } else if (r.mover_hp_after == 0) {
+            detail += ", lost to the counter";
+        } else if (r.mover_hp_after < r.mover_hp_before) {
+            detail += ", takes " + std::to_string(r.mover_hp_before - r.mover_hp_after) + " back";
+        }
+    }
+    if (r.capture) {
+        detail = r.capture_left == 0
+                     ? "captures " + std::string(Spec(map.tiles[m.to]).name)
+                     : "capturing, " + std::to_string(r.capture_left) + " points left";
+    }
+    float x = l.report.x;
+    x += DrawText(&state->font, x, y, size, kTextFaint, head);
+    x += DrawText(&state->font, x, y, size, kPlayer[r.side], kPlayerName[r.side]);
+    DrawText(&state->font, x + Ui(*state, 6), y, size, kText, line);
+    if (!detail.empty()) {
+        Color color = r.attack ? Color{0xff, 0x9a, 0x9f} : kTextDim;
+        DrawText(&state->font, l.report.x, y + LineHeight(size), small, color, detail);
+    }
+}
+
+void DrawFooter(State* state) {
+    const Layout& l = state->layout;
+    float size = Ui(*state, 12);
+    FillRect(state->renderer, Rect{l.footer.x, l.footer.y, l.footer.w, 1}, kPanelLine);
+    float y = l.footer.y + Ui(*state, 5);
+    DrawText(&state->font, l.footer.x, y, size, kTextFaint,
+             "left right  move     up down  turn     home end");
+    std::string second = state->mode == Mode::Play ? "P  replay     E  end turn     Esc  cancel"
+                                                   : "P  play from here     wheel  scroll moves";
+    DrawText(&state->font, l.footer.x, y + LineHeight(size), size, kTextFaint, second);
+}
+
+} // namespace
+
+std::string FormatEval(int eval) {
+    if (eval >= kDecisiveEval) {
+        return "+won";
+    }
+    if (eval <= -kDecisiveEval) {
+        return "-won";
+    }
+    std::string sign = eval > 0 ? "+" : eval < 0 ? "-" : "";
+    return sign + Thousands(std::abs(eval));
+}
+
+std::string FormatFunds(int funds) {
+    std::string digits = std::to_string(funds < 0 ? -funds : funds);
+    std::string out;
+    int count = 0;
+    for (int i = static_cast<int>(digits.size()) - 1; i >= 0; i--) {
+        out.insert(out.begin(), digits[static_cast<std::size_t>(i)]);
+        if (++count % 3 == 0 && i > 0) {
+            out.insert(out.begin(), ',');
+        }
+    }
+    return (funds < 0 ? "-" : "") + out;
+}
+
+void DrawEvalBar(State* state) {
+    const Rect& bar = state->layout.eval_bar;
+    if (bar.w <= 0) {
+        return;
+    }
+    float radius = Ui(*state, 4);
+    int eval = 0;
+    if (!EvalForPlayer0(*state, state->ply, &eval)) {
+        FillRoundRect(state->renderer, bar, radius, kPanelRaised);
+        FillRect(state->renderer, Rect{bar.x, bar.y + bar.h * 0.5f - 1, bar.w, 2}, kPanelLine);
+        return;
+    }
+    float share = 0.5f + 0.5f * std::tanh(static_cast<float>(eval) / kEvalBarScale);
+    if (eval >= kDecisiveEval) {
+        share = 1;
+    } else if (eval <= -kDecisiveEval) {
+        share = 0;
+    }
+    // player 1 from the top, player 0 from the bottom, like the board's two halves
+    FillRoundRect(state->renderer, bar, radius, kPlayerDeep[1]);
+    float split = std::round(bar.y + bar.h * (1 - share));
+    Rect bottom{bar.x, split, bar.w, bar.y + bar.h - split};
+    if (bottom.h > 0) {
+        FillRoundRect(state->renderer, bottom, bottom.h < radius * 2 ? 0 : radius, kPlayer[0]);
+        FillRect(state->renderer, Rect{bar.x, split, bar.w, std::fmin(radius, bottom.h)},
+                 kPlayer[0]);
+    }
+    FillRect(state->renderer, Rect{bar.x, bar.y + bar.h * 0.5f, bar.w, 1}, WithAlpha(kInk, 140));
+    FillRect(state->renderer, Rect{bar.x, split - 1, bar.w, 2}, kText);
+}
+
+void DrawSidePanel(State* state) {
+    const Layout& l = state->layout;
+    FillRect(state->renderer, l.panel, kPanel);
+    FillRect(state->renderer, Rect{l.panel.x, 0, 1, l.height}, kPanelLine);
+    DrawHeader(state);
+    DrawReport(state);
+    DrawMoveList(state);
+    DrawFooter(state);
+}
+
+} // namespace shoal
