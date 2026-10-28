@@ -255,18 +255,4 @@ std::vector<int> MovePath(const Map& map, const Position& before, const Move& mo
     return std::vector<int>(path.rbegin(), path.rend());
 }
 
-const char* ResultText(Result result) {
-    switch (result) {
-    case Result::Ongoing:
-        return "in play";
-    case Result::Win0:
-        return "Player 0 wins";
-    case Result::Win1:
-        return "Player 1 wins";
-    case Result::Draw:
-        return "Draw";
-    }
-    return "?";
-}
-
 } // namespace shoal

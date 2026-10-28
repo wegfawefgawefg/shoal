@@ -64,6 +64,23 @@ void DrawPlayerCard(State* state, Rect card, int player, const Position& pos) {
     DrawText(&state->font, x, y + LineHeight(name_size), info_size, kTextDim, info);
 }
 
+// who won and how: the hq, a rout, or the day limit
+std::string ResultLine(const State& state, const Position& pos) {
+    if (pos.result == Result::Draw) {
+        return "Draw on the day limit";
+    }
+    int winner = pos.result == Result::Win0 ? 0 : 1;
+    std::string line = std::string(kPlayerName[winner]) + " wins";
+    const MoveReport& r = state.report;
+    if (r.capture && r.capture_left == 0 && state.game.map.tiles[r.move.to] == Terrain::Hq) {
+        return line + ", HQ taken";
+    }
+    if (UnitCount(pos, 1 - winner) == 0) {
+        return line + ", rout";
+    }
+    return line + " on the day limit";
+}
+
 void DrawHeader(State* state) {
     const Layout& l = state->layout;
     const Map& map = state->game.map;
@@ -77,21 +94,23 @@ void DrawHeader(State* state) {
                     Align::Right);
     y += LineHeight(title);
 
-    // status: result, or who moves, plus the eval
-    std::string status;
-    Color status_color = kTextDim;
+    // status: who moves, or a pill with the result
     if (pos.result != Result::Ongoing) {
-        status = ResultText(pos.result);
-        status_color = pos.result == Result::Win0   ? kPlayer[0]
-                       : pos.result == Result::Win1 ? kPlayer[1]
-                                                    : kText;
+        std::string text = ResultLine(*state, pos);
+        Color fill = pos.result == Result::Win0   ? kPlayer[0]
+                     : pos.result == Result::Win1 ? kPlayer[1]
+                                                  : kText;
+        float w = TextWidth(&state->font, small, text) + Ui(*state, 16);
+        FillRoundRect(state->renderer, Rect{l.header.x, y, w, LineHeight(small)},
+                      LineHeight(small) * 0.5f, fill);
+        DrawText(&state->font, l.header.x + Ui(*state, 8), y, small, kInk, text);
     } else {
-        status = std::string(kPlayerName[pos.side]) + " to move";
+        std::string status = std::string(kPlayerName[pos.side]) + " to move";
+        if (state->mode == Mode::Play) {
+            status += "   play mode";
+        }
+        DrawText(&state->font, l.header.x, y, small, kTextDim, status);
     }
-    if (state->mode == Mode::Play) {
-        status += "   play mode";
-    }
-    DrawText(&state->font, l.header.x, y, small, status_color, status);
     int eval = 0;
     if (EvalForPlayer0(*state, state->ply, &eval)) {
         DrawTextAligned(&state->font, l.header.x + l.header.w, y, small, kText,
@@ -141,7 +160,7 @@ void DrawReport(State* state) {
         line = UnitName(r.mover) + " " + TileName(map, m.from);
         if (m.to != m.from) {
             line += " to " + TileName(map, m.to);
-        } else {
+        } else if (m.kind == MoveKind::Wait) {
             line += " holds";
         }
         break;
@@ -179,8 +198,9 @@ void DrawFooter(State* state) {
     float y = l.footer.y + Ui(*state, 5);
     DrawText(&state->font, l.footer.x, y, size, kTextFaint,
              "left right  move     up down  turn     home end");
-    std::string second = state->mode == Mode::Play ? "P  replay     E  end turn     Esc  cancel"
-                                                   : "P  play from here     wheel  scroll moves";
+    std::string second = state->mode == Mode::Play
+                             ? "P  replay   E  end turn   Esc  cancel   R  reload file"
+                             : "P  play from here     wheel  scroll moves";
     DrawText(&state->font, l.footer.x, y + LineHeight(size), size, kTextFaint, second);
 }
 

@@ -31,6 +31,4 @@ void PlayMove(State* state, const Move& move);
 // cheapest walk (then fewest turns) a unit could have taken for a move
 std::vector<int> MovePath(const Map& map, const Position& before, const Move& move);
 
-const char* ResultText(Result result);
-
 } // namespace shoal

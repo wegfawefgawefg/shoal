@@ -76,7 +76,9 @@ std::string ActionLabel(const State& state, const Move& move) {
         std::string label = "Fire at " + TileName(map, move.target) + " " +
                             std::string(Spec(defender.type).name) + "  " +
                             std::to_string(hp_before) + " > " + std::to_string(hp_after);
-        if (mine_after < mine_before) {
+        if (mine_after == 0) {
+            label += ", lost to the counter";
+        } else if (mine_after < mine_before) {
             label += ", takes " + std::to_string(mine_before - mine_after);
         }
         return label;

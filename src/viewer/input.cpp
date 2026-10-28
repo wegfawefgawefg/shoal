@@ -9,6 +9,19 @@ namespace shoal {
 
 namespace {
 
+// drops moves entered by hand and goes back to the file as it is on disk
+void ReloadRecord(State* state) {
+    int ply = state->ply;
+    std::string error;
+    if (!LoadRecord(state, state->path, &error)) {
+        SDL_Log("reload %s: %s", state->path.c_str(), error.c_str());
+        return;
+    }
+    state->edited_from = -1;
+    SetPly(state, ply);
+    state->scroll_to_ply = true;
+}
+
 void StepTo(State* state, int ply) {
     SetPly(state, ply);
     state->scroll_to_ply = true;
@@ -45,6 +58,9 @@ void HandleKey(State* state, SDL_Keycode key) {
         return;
     case SDLK_ESCAPE:
         PlayCancel(state);
+        return;
+    case SDLK_R:
+        ReloadRecord(state);
         return;
     case SDLK_Q:
         state->running = false;
