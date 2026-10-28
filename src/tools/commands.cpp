@@ -20,45 +20,6 @@ double Seconds(std::chrono::steady_clock::time_point start) {
     return std::chrono::duration<double>(now - start).count();
 }
 
-// a map file starts the game; a game file replays to its last move
-bool LoadPosition(const char* path, GameRecord* game, Position* pos) {
-    std::string text;
-    if (!ReadWholeFile(path, &text)) {
-        std::fprintf(stderr, "cannot read %s\n", path);
-        return false;
-    }
-    std::string error;
-    bool is_game = text.find("(game") != std::string::npos;
-    if (is_game) {
-        if (!LoadGameText(text, game, &error)) {
-            std::fprintf(stderr, "%s: %s\n", path, error.c_str());
-            return false;
-        }
-    } else if (!LoadMapText(text, &game->map, &error)) {
-        std::fprintf(stderr, "%s: %s\n", path, error.c_str());
-        return false;
-    }
-    SetupStart(game->map, pos);
-    for (const Move& move : game->moves) {
-        ApplyMove(game->map, pos, move);
-    }
-    return true;
-}
-
-const char* ResultText(Result result) {
-    switch (result) {
-    case Result::Ongoing:
-        return "ongoing";
-    case Result::Win0:
-        return "player 0 wins";
-    case Result::Win1:
-        return "player 1 wins";
-    case Result::Draw:
-        return "draw";
-    }
-    return "?";
-}
-
 std::uint64_t Perft(const Map& map, const Position& pos, int depth,
                     std::vector<MoveList>& lists) {
     if (depth == 0 || pos.result != Result::Ongoing) {
@@ -90,6 +51,45 @@ struct Rng {
 
 } // namespace
 
+const char* ResultTextFor(Result result) {
+    switch (result) {
+    case Result::Ongoing:
+        return "ongoing";
+    case Result::Win0:
+        return "player 0 wins";
+    case Result::Win1:
+        return "player 1 wins";
+    case Result::Draw:
+        return "draw";
+    }
+    return "?";
+}
+
+// a map file starts the game; a game file replays to its last move
+bool LoadPosition(const char* path, GameRecord* game, Position* pos) {
+    std::string text;
+    if (!ReadWholeFile(path, &text)) {
+        std::fprintf(stderr, "cannot read %s\n", path);
+        return false;
+    }
+    std::string error;
+    bool is_game = text.find("(game") != std::string::npos;
+    if (is_game) {
+        if (!LoadGameText(text, game, &error)) {
+            std::fprintf(stderr, "%s: %s\n", path, error.c_str());
+            return false;
+        }
+    } else if (!LoadMapText(text, &game->map, &error)) {
+        std::fprintf(stderr, "%s: %s\n", path, error.c_str());
+        return false;
+    }
+    SetupStart(game->map, pos);
+    for (const Move& move : game->moves) {
+        ApplyMove(game->map, pos, move);
+    }
+    return true;
+}
+
 int RunShow(int argc, char** argv) {
     if (argc < 1) {
         std::fprintf(stderr, "usage: shoal show <map|game>\n");
@@ -101,7 +101,7 @@ int RunShow(int argc, char** argv) {
         return 1;
     }
     std::printf("%s", BoardText(game->map, pos).c_str());
-    std::printf("%s\n", ResultText(pos.result));
+    std::printf("%s\n", ResultTextFor(pos.result));
     return 0;
 }
 

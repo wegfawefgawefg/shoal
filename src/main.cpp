@@ -14,7 +14,9 @@ void PrintUsage() {
                 "  shoal show <map|game>           print the start (or end) position\n"
                 "  shoal moves <map>               list the legal first moves\n"
                 "  shoal perft <map> <plies>       count move paths to a depth\n"
-                "  shoal random <map> [games] [seed]  random playouts: results and speed\n");
+                "  shoal random <map> [games] [seed]  random playouts: results and speed\n"
+                "  shoal search <map|game> [--depth N] [--time S] [--solve] [--table log2]\n"
+                "  shoal selfplay <map> [--time S] [--depth N] [--out game.sexp]\n");
 }
 
 } // namespace
@@ -36,6 +38,12 @@ int main(int argc, char** argv) {
     }
     if (command == "random") {
         return shoal::RunRandom(argc - 2, argv + 2);
+    }
+    if (command == "search") {
+        return shoal::RunSearch(argc - 2, argv + 2);
+    }
+    if (command == "selfplay") {
+        return shoal::RunSelfPlay(argc - 2, argv + 2);
     }
     std::fprintf(stderr, "unknown command %s\n", command.c_str());
     PrintUsage();
