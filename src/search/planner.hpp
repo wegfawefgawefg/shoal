@@ -34,6 +34,7 @@ struct PlannerResult {
 struct Planner {
     const Map* map = nullptr;
     DistanceTable distances;
+    PlanWeights weights;
     std::uint64_t plans = 0;
     std::chrono::steady_clock::time_point deadline;
     bool stopped = false;

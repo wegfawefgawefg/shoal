@@ -18,8 +18,8 @@ struct ThreatMap {
 void BuildThreats(const Map& map, const Position& pos, int attacker_side, ThreatMap* threats);
 
 // funds a unit standing on `tile` should expect to lose next turn: the best hit on it plus
-// half the second best, at most the unit's worth
+// second_pct percent of the second best, at most the unit's worth
 int Exposure(const Map& map, const Position& pos, const ThreatMap& threats, const Unit& unit,
-             int tile);
+             int tile, int second_pct);
 
 } // namespace shoal

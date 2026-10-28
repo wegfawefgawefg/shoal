@@ -23,6 +23,7 @@ struct EngineSpec {
     double seconds = 0.5; // per turn
     int turns = 16;
     int beam = 8;
+    PlanWeights weights;
     std::string text;
 };
 

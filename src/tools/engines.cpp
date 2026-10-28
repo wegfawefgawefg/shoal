@@ -101,6 +101,10 @@ bool ParseEngine(const std::string& text, EngineSpec* spec) {
             spec->turns = std::atoi(value.c_str());
         } else if (key == "beam") {
             spec->beam = std::atoi(value.c_str());
+        } else if (key.rfind("w.", 0) == 0) {
+            if (!SetPlanWeight(&spec->weights, key.substr(2), std::atoi(value.c_str()))) {
+                return false;
+            }
         } else {
             return false;
         }
@@ -118,6 +122,7 @@ void EngineInit(Engine* engine, const EngineSpec& spec, const Map& map, std::uin
     if (spec.kind == EngineKind::Plan || spec.kind == EngineKind::Greedy) {
         engine->planner = std::make_unique<Planner>();
         PlannerInit(engine->planner.get(), map);
+        engine->planner->weights = spec.weights;
     }
 }
 

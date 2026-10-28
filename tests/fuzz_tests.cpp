@@ -70,7 +70,7 @@ void FuzzMap(TestResults& r, const Map& map, int games, std::uint64_t seed) {
     for (int g = 0; g < games; g++) {
         Position pos;
         SetupStart(map, &pos);
-        PlanBegin(ctx.get(), map, *distances, pos);
+        PlanBegin(ctx.get(), map, *distances, PlanWeights{}, pos);
         int last_side = pos.side;
         for (int ply = 0; ply < 3000 && pos.result == Result::Ongoing; ply++) {
             GenerateMoves(map, pos, list.get());
@@ -105,7 +105,7 @@ void FuzzMap(TestResults& r, const Map& map, int games, std::uint64_t seed) {
             }
             ApplyMove(map, &pos, move);
             if (pos.side != last_side) {
-                PlanBegin(ctx.get(), map, *distances, pos);
+                PlanBegin(ctx.get(), map, *distances, PlanWeights{}, pos);
                 last_side = pos.side;
             }
             std::string why;

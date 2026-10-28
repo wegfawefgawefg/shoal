@@ -64,7 +64,7 @@ int CapturerPlacement(const PlanContext& ctx, const Position& pos, const Unit& u
             best_turns = turns;
         }
     }
-    return Clamp0(1600 - best_turns * 400);
+    return Clamp0(ctx.weights.capture_reach - best_turns * ctx.weights.capture_per_turn);
 }
 
 // fighters want enemies they can hit within reach; worth a slice of their own cost
@@ -97,10 +97,48 @@ int FighterPlacement(const PlanContext& ctx, const Position& pos, const Unit& un
             best_turns = turns;
         }
     }
-    return Clamp0((4 - best_turns) * spec.cost / 40);
+    return Clamp0((ctx.weights.fight_turns - best_turns) * spec.cost * ctx.weights.fight_share /
+                  1000);
 }
 
+struct WeightName {
+    const char* name;
+    int PlanWeights::*field;
+};
+
+const WeightName kWeightNames[] = {
+    {"exposure", &PlanWeights::exposure},
+    {"second_hit", &PlanWeights::second_hit},
+    {"capture_reach", &PlanWeights::capture_reach},
+    {"capture_per_turn", &PlanWeights::capture_per_turn},
+    {"fight_turns", &PlanWeights::fight_turns},
+    {"fight_share", &PlanWeights::fight_share},
+    {"base_block", &PlanWeights::base_block},
+    {"idle_funds", &PlanWeights::idle_funds},
+};
+
 } // namespace
+
+bool SetPlanWeight(PlanWeights* weights, const std::string& name, int value) {
+    for (const WeightName& entry : kWeightNames) {
+        if (name == entry.name) {
+            weights->*entry.field = value;
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string PlanWeightsText(const PlanWeights& weights) {
+    std::string text;
+    for (const WeightName& entry : kWeightNames) {
+        if (!text.empty()) {
+            text += " ";
+        }
+        text += std::string(entry.name) + "=" + std::to_string(weights.*entry.field);
+    }
+    return text;
+}
 
 void BuildDistances(const Map& map, DistanceTable* table) {
     int n = map.width * map.height;
@@ -117,7 +155,8 @@ void BuildDistances(const Map& map, DistanceTable* table) {
 }
 
 void PlanBegin(PlanContext* ctx, const Map& map, const DistanceTable& distances,
-               const Position& pos) {
+               const PlanWeights& weights, const Position& pos) {
+    ctx->weights = weights;
     ctx->map = &map;
     ctx->distances = &distances;
     ctx->side = pos.side;
@@ -126,15 +165,16 @@ void PlanBegin(PlanContext* ctx, const Map& map, const DistanceTable& distances,
 
 int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit) {
     const Map& map = *ctx.map;
-    int score = -Exposure(map, pos, ctx.threats, unit, unit.tile);
+    int score = -Exposure(map, pos, ctx.threats, unit, unit.tile, ctx.weights.second_hit) *
+                ctx.weights.exposure / 100;
     int prop = map.property_at[unit.tile];
     bool capturing = prop != kNoProperty && pos.capture[prop] != kCapturePoints;
     if (Spec(unit.type).can_capture && !capturing) {
         score += CapturerPlacement(ctx, pos, unit);
     }
-    score += FighterPlacement(ctx, pos, unit) / 2;
+    score += FighterPlacement(ctx, pos, unit);
     if (map.production && map.tiles[unit.tile] == Terrain::Base) {
-        score -= 400; // standing on our base blocks next turn's build
+        score -= ctx.weights.base_block; // standing on our base blocks next turn's build
     }
     return score;
 }
@@ -147,7 +187,7 @@ int PlanScore(const PlanContext& ctx, const Position& pos) {
     int score = Evaluate(map, pos, ctx.side);
     if (map.production) {
         // unspent funds are worth a little less than the units they could buy
-        score -= pos.funds[ctx.side] / 6;
+        score -= pos.funds[ctx.side] * ctx.weights.idle_funds / 100;
     }
     for (int i = 0; i < pos.unit_count; i++) {
         const Unit& unit = pos.units[i];

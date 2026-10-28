@@ -20,5 +20,6 @@ int RunPlan(int argc, char** argv);
 int RunPlanPlay(int argc, char** argv);
 int RunMatch(int argc, char** argv);
 int RunGenMap(int argc, char** argv);
+int RunTune(int argc, char** argv);
 
 } // namespace shoal

@@ -64,7 +64,7 @@ void BuildThreats(const Map& map, const Position& pos, int attacker_side, Threat
 }
 
 int Exposure(const Map& map, const Position& pos, const ThreatMap& threats, const Unit& unit,
-             int tile) {
+             int tile, int second_pct) {
     std::uint64_t bits = threats.attackers[tile];
     int best = 0;
     int second = 0;
@@ -89,7 +89,7 @@ int Exposure(const Map& map, const Position& pos, const ThreatMap& threats, cons
             second = damage;
         }
     }
-    int loss = best + second / 2;
+    int loss = best + second * second_pct / 100;
     if (loss > unit.hp) {
         loss = unit.hp;
     }

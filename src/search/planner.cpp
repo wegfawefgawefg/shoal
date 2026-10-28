@@ -121,7 +121,7 @@ TurnPlan GreedyTurn(Planner* planner, const Position& pos) {
 std::vector<TurnPlan> BeamTurns(Planner* planner, const Position& pos, int width) {
     const Map& map = *planner->map;
     auto ctx = std::make_unique<PlanContext>();
-    PlanBegin(ctx.get(), map, planner->distances, pos);
+    PlanBegin(ctx.get(), map, planner->distances, planner->weights, pos);
     auto list = std::make_unique<MoveList>();
 
     std::vector<BeamNode> beam(1);
