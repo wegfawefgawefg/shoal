@@ -6,6 +6,7 @@ int main() {
     TestResults results;
     RunRulesTests(results);
     RunFileTests(results);
+    RunFuzzTests(results);
     std::printf("%d passed, %d failed\n", results.passed, results.failed);
     return results.failed == 0 ? 0 : 1;
 }
