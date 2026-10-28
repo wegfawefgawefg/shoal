@@ -2,26 +2,35 @@
 
 namespace shoal {
 
-int Neighbours(const Map& map, int tile, int out[4]) {
-    int x = TileX(map, tile);
-    int y = TileY(map, tile);
-    int count = 0;
-    if (y > 0) {
-        out[count++] = tile - map.width;
+namespace {
+
+void IndexNeighbours(Map* map) {
+    int tile_count = map->width * map->height;
+    for (int tile = 0; tile < tile_count; tile++) {
+        int x = TileX(*map, tile);
+        int y = TileY(*map, tile);
+        int count = 0;
+        std::uint16_t* out = map->neighbours[tile];
+        if (y > 0) {
+            out[count++] = static_cast<std::uint16_t>(tile - map->width);
+        }
+        if (x > 0) {
+            out[count++] = static_cast<std::uint16_t>(tile - 1);
+        }
+        if (x + 1 < map->width) {
+            out[count++] = static_cast<std::uint16_t>(tile + 1);
+        }
+        if (y + 1 < map->height) {
+            out[count++] = static_cast<std::uint16_t>(tile + map->width);
+        }
+        map->neighbour_count[tile] = static_cast<std::uint8_t>(count);
     }
-    if (x > 0) {
-        out[count++] = tile - 1;
-    }
-    if (x + 1 < map.width) {
-        out[count++] = tile + 1;
-    }
-    if (y + 1 < map.height) {
-        out[count++] = tile + map.width;
-    }
-    return count;
 }
 
+} // namespace
+
 void IndexProperties(Map* map) {
+    IndexNeighbours(map);
     map->property_count = 0;
     int tile_count = map->width * map->height;
     for (int tile = 0; tile < kMaxTiles; tile++) {

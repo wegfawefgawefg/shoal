@@ -45,6 +45,10 @@ struct PlanContext {
     const DistanceTable* distances = nullptr;
     int side = 0;
     ThreatMap threats; // the other side's reach, taken at the start of this turn
+    // placement values by unit type and tile, filled on first use this turn; like the
+    // threat map they describe the board as the turn began
+    mutable std::int32_t capture_cache[kUnitTypeCount][kMaxTiles];
+    mutable std::int32_t fight_cache[kUnitTypeCount][kMaxTiles];
 };
 
 void PlanBegin(PlanContext* ctx, const Map& map, const DistanceTable& distances,

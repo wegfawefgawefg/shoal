@@ -9,6 +9,7 @@ namespace shoal {
 namespace {
 
 constexpr std::uint8_t kFar = 255;
+constexpr std::int32_t kUnfilled = -2147483647;
 
 void DistancesFrom(const Map& map, MoveType move_type, int source, std::uint8_t* out) {
     int tile_count = map.width * map.height;
@@ -161,6 +162,13 @@ void PlanBegin(PlanContext* ctx, const Map& map, const DistanceTable& distances,
     ctx->distances = &distances;
     ctx->side = pos.side;
     BuildThreats(map, pos, pos.side ^ 1, &ctx->threats);
+    int tile_count = map.width * map.height;
+    for (int type = 0; type < kUnitTypeCount; type++) {
+        for (int tile = 0; tile < tile_count; tile++) {
+            ctx->capture_cache[type][tile] = kUnfilled;
+            ctx->fight_cache[type][tile] = kUnfilled;
+        }
+    }
 }
 
 int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit) {
@@ -169,10 +177,19 @@ int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit)
                 ctx.weights.exposure / 100;
     int prop = map.property_at[unit.tile];
     bool capturing = prop != kNoProperty && pos.capture[prop] != kCapturePoints;
+    int type = static_cast<int>(unit.type);
     if (Spec(unit.type).can_capture && !capturing) {
-        score += CapturerPlacement(ctx, pos, unit);
+        std::int32_t& capture = ctx.capture_cache[type][unit.tile];
+        if (capture == kUnfilled) {
+            capture = CapturerPlacement(ctx, pos, unit);
+        }
+        score += capture;
     }
-    score += FighterPlacement(ctx, pos, unit);
+    std::int32_t& fight = ctx.fight_cache[type][unit.tile];
+    if (fight == kUnfilled) {
+        fight = FighterPlacement(ctx, pos, unit);
+    }
+    score += fight;
     if (map.production && map.tiles[unit.tile] == Terrain::Base) {
         score -= ctx.weights.base_block; // standing on our base blocks next turn's build
     }

@@ -40,6 +40,10 @@ struct Map {
     int day_limit = 20;     // the game is scored when player 2's turn ends on this day
     bool production = false; // bases build units
     bool buildable[kUnitTypeCount] = {};
+
+    // orthogonal neighbours of every tile, filled by IndexProperties
+    std::uint8_t neighbour_count[kMaxTiles] = {};
+    std::uint16_t neighbours[kMaxTiles][4] = {};
 };
 
 inline int TileX(const Map& map, int tile) {
@@ -61,9 +65,16 @@ inline int Distance(const Map& map, int a, int b) {
 }
 
 // fills up to four orthogonal neighbours, returns the count
-int Neighbours(const Map& map, int tile, int out[4]);
+inline int Neighbours(const Map& map, int tile, int out[4]) {
+    int count = map.neighbour_count[tile];
+    for (int i = 0; i < count; i++) {
+        out[i] = map.neighbours[tile][i];
+    }
+    return count;
+}
 
-// rebuilds property_tiles/property_at from the terrain; keeps start_owner per property
+// after the terrain is set: rebuilds the neighbour lists and property_tiles/property_at;
+// keeps start_owner per property
 void IndexProperties(Map* map);
 
 // "a1" is the top left tile; columns a..z then aa..af

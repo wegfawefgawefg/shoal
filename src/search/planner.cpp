@@ -33,8 +33,7 @@ struct BeamNode {
 // a plain move only changes the moving unit's own terms: score it without playing it.
 // Returns false when the move needs the full path (attacks, captures, builds, or leaving a
 // capture half done)
-bool ScoreQuietMove(const PlanContext& ctx, const TurnPlan& plan, const Move& move, int* score,
-                    std::uint64_t* hash) {
+bool ScoreQuietMove(const PlanContext& ctx, const TurnPlan& plan, const Move& move, int* score) {
     if (move.kind != MoveKind::Wait) {
         return false;
     }
@@ -48,7 +47,6 @@ bool ScoreQuietMove(const PlanContext& ctx, const TurnPlan& plan, const Move& mo
     moved.tile = move.to;
     moved.done = 1;
     *score = plan.score - PlanUnitTerms(ctx, pos, unit) + PlanUnitTerms(ctx, pos, moved);
-    *hash = pos.hash ^ UnitHashKey(unit) ^ UnitHashKey(moved);
     return true;
 }
 
@@ -133,7 +131,6 @@ std::vector<TurnPlan> BeamTurns(Planner* planner, const Position& pos, int width
         int score;
         int parent;
         Move move;
-        std::uint64_t hash;
     };
     std::vector<Child> children;
     for (int step = 0; step < kMaxTurnActions && !beam.empty(); step++) {
@@ -150,17 +147,15 @@ std::vector<TurnPlan> BeamTurns(Planner* planner, const Position& pos, int width
                     continue;
                 }
                 int score;
-                std::uint64_t hash;
-                if (!ScoreQuietMove(*ctx, plan, move, &score, &hash)) {
+                if (!ScoreQuietMove(*ctx, plan, move, &score)) {
                     Position child = plan.end;
                     ApplyMove(map, &child, move);
                     score = PlanScore(*ctx, child);
-                    hash = child.hash;
                 }
                 if (score <= plan.score) {
                     continue; // only improvements extend a turn
                 }
-                children.push_back({score, b, move, hash});
+                children.push_back({score, b, move});
             }
         }
         // every beam node is also a finished turn as it stands
@@ -175,13 +170,13 @@ std::vector<TurnPlan> BeamTurns(Planner* planner, const Position& pos, int width
             if (static_cast<int>(next.size()) >= width) {
                 break;
             }
-            if (std::find(seen.begin(), seen.end(), child.hash) != seen.end()) {
-                continue; // the same position by another order
-            }
-            seen.push_back(child.hash);
             BeamNode node;
             node.plan = beam[static_cast<std::size_t>(child.parent)].plan;
             ApplyMove(map, &node.plan.end, child.move);
+            if (std::find(seen.begin(), seen.end(), node.plan.end.hash) != seen.end()) {
+                continue; // the same position by another order
+            }
+            seen.push_back(node.plan.end.hash);
             node.plan.moves.push_back(child.move);
             node.plan.score = child.score;
             next.push_back(std::move(node));
