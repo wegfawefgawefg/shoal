@@ -36,5 +36,7 @@ void PlanBegin(PlanContext* ctx, const Map& map, const DistanceTable& distances,
 // score from ctx->side's view: material, properties, funds, minus what the enemy can take
 // back next turn, plus how well placed our units are
 int PlanScore(const PlanContext& ctx, const Position& pos);
+// the part of PlanScore one of ctx->side's units adds, as if it stood on unit.tile
+int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit);
 
 } // namespace shoal

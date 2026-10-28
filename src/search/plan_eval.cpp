@@ -124,6 +124,21 @@ void PlanBegin(PlanContext* ctx, const Map& map, const DistanceTable& distances,
     BuildThreats(map, pos, pos.side ^ 1, &ctx->threats);
 }
 
+int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit) {
+    const Map& map = *ctx.map;
+    int score = -Exposure(map, pos, ctx.threats, unit, unit.tile);
+    int prop = map.property_at[unit.tile];
+    bool capturing = prop != kNoProperty && pos.capture[prop] != kCapturePoints;
+    if (Spec(unit.type).can_capture && !capturing) {
+        score += CapturerPlacement(ctx, pos, unit);
+    }
+    score += FighterPlacement(ctx, pos, unit) / 2;
+    if (map.production && map.tiles[unit.tile] == Terrain::Base) {
+        score -= 400; // standing on our base blocks next turn's build
+    }
+    return score;
+}
+
 int PlanScore(const PlanContext& ctx, const Position& pos) {
     const Map& map = *ctx.map;
     if (pos.result != Result::Ongoing) {
@@ -136,18 +151,8 @@ int PlanScore(const PlanContext& ctx, const Position& pos) {
     }
     for (int i = 0; i < pos.unit_count; i++) {
         const Unit& unit = pos.units[i];
-        if (unit.owner != ctx.side) {
-            continue;
-        }
-        score -= Exposure(map, pos, ctx.threats, unit, unit.tile);
-        bool capturing = map.property_at[unit.tile] != kNoProperty &&
-                         pos.capture[map.property_at[unit.tile]] != kCapturePoints;
-        if (Spec(unit.type).can_capture && !capturing) {
-            score += CapturerPlacement(ctx, pos, unit);
-        }
-        score += FighterPlacement(ctx, pos, unit) / 2;
-        if (map.production && map.tiles[unit.tile] == Terrain::Base) {
-            score -= 400; // standing on our base blocks next turn's build
+        if (unit.owner == ctx.side) {
+            score += PlanUnitTerms(ctx, pos, unit);
         }
     }
     return score;

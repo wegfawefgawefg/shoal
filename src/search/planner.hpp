@@ -18,8 +18,8 @@ struct TurnPlan {
 
 struct PlannerLimits {
     double seconds = 1.0;
-    int max_turns = 3;  // turn depth: 1 = our turn then their greedy reply
-    int beam_width = 6; // candidate turns per side at each node
+    int max_turns = 16; // turn depth: 1 = our turn then their greedy reply
+    int beam_width = 8; // candidate turns per side at each node
     bool quiet = false;
 };
 

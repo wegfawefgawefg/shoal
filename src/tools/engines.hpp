@@ -21,8 +21,8 @@ enum class EngineKind {
 struct EngineSpec {
     EngineKind kind = EngineKind::Plan;
     double seconds = 0.5; // per turn
-    int turns = 3;
-    int beam = 6;
+    int turns = 16;
+    int beam = 8;
     std::string text;
 };
 

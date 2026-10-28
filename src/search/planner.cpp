@@ -30,6 +30,28 @@ struct BeamNode {
     bool open = true;
 };
 
+// a plain move only changes the moving unit's own terms: score it without playing it.
+// Returns false when the move needs the full path (attacks, captures, builds, or leaving a
+// capture half done)
+bool ScoreQuietMove(const PlanContext& ctx, const TurnPlan& plan, const Move& move, int* score,
+                    std::uint64_t* hash) {
+    if (move.kind != MoveKind::Wait) {
+        return false;
+    }
+    const Position& pos = plan.end;
+    int from_prop = ctx.map->property_at[move.from];
+    if (from_prop != kNoProperty && pos.capture[from_prop] != kCapturePoints) {
+        return false;
+    }
+    const Unit& unit = pos.units[pos.unit_at[move.from]];
+    Unit moved = unit;
+    moved.tile = move.to;
+    moved.done = 1;
+    *score = plan.score - PlanUnitTerms(ctx, pos, unit) + PlanUnitTerms(ctx, pos, moved);
+    *hash = pos.hash ^ UnitHashKey(unit) ^ UnitHashKey(moved);
+    return true;
+}
+
 // the turn's end applied: what the next side starts from
 Position AfterEnd(const Map& map, const Position& end) {
     Position next = end;
@@ -127,13 +149,18 @@ std::vector<TurnPlan> BeamTurns(Planner* planner, const Position& pos, int width
                 if (Skippable(move)) {
                     continue;
                 }
-                Position child = plan.end;
-                ApplyMove(map, &child, move);
-                int score = PlanScore(*ctx, child);
+                int score;
+                std::uint64_t hash;
+                if (!ScoreQuietMove(*ctx, plan, move, &score, &hash)) {
+                    Position child = plan.end;
+                    ApplyMove(map, &child, move);
+                    score = PlanScore(*ctx, child);
+                    hash = child.hash;
+                }
                 if (score <= plan.score) {
                     continue; // only improvements extend a turn
                 }
-                children.push_back({score, b, move, child.hash});
+                children.push_back({score, b, move, hash});
             }
         }
         // every beam node is also a finished turn as it stands
@@ -195,7 +222,8 @@ PlannerResult PlanTurn(Planner* planner, const Position& pos, const PlannerLimit
     std::vector<TurnPlan> roots = BeamTurns(planner, pos, limits.beam_width);
     result.turn = roots.front();
     result.score = roots.front().score;
-    for (int turns = 1; turns <= limits.max_turns; turns++) {
+    // odd depths only, so the last turn searched is always the reply to ours
+    for (int turns = 1; turns <= limits.max_turns; turns += 2) {
         int best = -kInfinity;
         int best_index = 0;
         for (int i = 0; i < static_cast<int>(roots.size()); i++) {

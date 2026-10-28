@@ -34,18 +34,21 @@ std::vector<std::string_view> SplitWords(std::string_view text) {
 
 } // namespace
 
+std::uint64_t UnitHashKey(const Unit& unit) {
+    std::uint64_t key = static_cast<std::uint64_t>(unit.tile);
+    key = key << 8 | static_cast<std::uint64_t>(unit.type);
+    key = key << 8 | unit.owner;
+    key = key << 8 | unit.hp;
+    key = key << 8 | unit.ammo;
+    key = key << 8 | unit.done;
+    return Mix(key);
+}
+
 std::uint64_t ComputeHash(const Map& map, const Position& pos) {
     // units xor together so their order in the array does not matter
     std::uint64_t hash = 0;
     for (int i = 0; i < pos.unit_count; i++) {
-        const Unit& unit = pos.units[i];
-        std::uint64_t key = static_cast<std::uint64_t>(unit.tile);
-        key = key << 8 | static_cast<std::uint64_t>(unit.type);
-        key = key << 8 | unit.owner;
-        key = key << 8 | unit.hp;
-        key = key << 8 | unit.ammo;
-        key = key << 8 | unit.done;
-        hash ^= Mix(key);
+        hash ^= UnitHashKey(pos.units[i]);
     }
     for (int prop = 0; prop < map.property_count; prop++) {
         std::uint64_t key = 1ull << 60 | static_cast<std::uint64_t>(prop) << 16;

@@ -94,6 +94,8 @@ int UnitCount(const Position& pos, int owner);
 int PropertyCount(const Position& pos, const Map& map, int owner);
 
 std::uint64_t ComputeHash(const Map& map, const Position& pos);
+// one unit's share of the hash; the hash xors these with the board terms
+std::uint64_t UnitHashKey(const Unit& unit);
 
 // "a2 b2", "a2 b2 x c2", "a2 a2 cap", "b1 build inf", "end"
 std::string MoveText(const Map& map, const Move& move);
