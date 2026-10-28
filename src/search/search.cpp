@@ -12,6 +12,7 @@ namespace {
 
 constexpr int kSolveDepth = 30000;
 constexpr int kInfinity = kWinScore + 1;
+constexpr int kMaxQuiescePlies = 12;
 
 // win scores count plies from the node, so a table hit means the same thing at any ply
 int ToTable(int score, int ply) {
@@ -71,13 +72,63 @@ PlyScratch& ScratchAt(Searcher* s, int ply) {
     return s->plies[static_cast<std::size_t>(ply)];
 }
 
+// at the horizon the side to move may still finish its attacks and captures; ending the
+// turn there is the stand-pat score
+int Quiesce(Searcher* s, const Position& pos, int alpha, int beta, int ply, int qply) {
+    s->nodes++;
+    if (pos.result != Result::Ongoing) {
+        return Terminal(*s, pos, ply);
+    }
+    int stand = Evaluate(*s->map, pos, pos.side);
+    if (stand >= beta || qply >= kMaxQuiescePlies || OutOfBudget(s)) {
+        return stand;
+    }
+    if (stand > alpha) {
+        alpha = stand;
+    }
+    PlyScratch& scratch = ScratchAt(s, ply);
+    MoveList& list = scratch.list;
+    int* scores = scratch.scores;
+    GenerateMoves(*s->map, pos, &list);
+    ScoreMoves(*s->map, pos, list, nullptr, s->history.data(), scores);
+    int best = stand;
+    for (int i = 0; i < list.count; i++) {
+        PickNext(&list, scores, i);
+        const Move& move = list.moves[i];
+        if (move.kind != MoveKind::Attack && move.kind != MoveKind::Capture) {
+            break; // tactical moves sort first
+        }
+        Position child = pos;
+        ApplyMove(*s->map, &child, move);
+        int score;
+        if (child.result != Result::Ongoing) {
+            score = Terminal(*s, child, ply + 1);
+        } else {
+            score = Quiesce(s, child, alpha, beta, ply + 1, qply + 1);
+        }
+        if (s->stopped) {
+            return 0;
+        }
+        if (score > best) {
+            best = score;
+        }
+        if (score > alpha) {
+            alpha = score;
+        }
+        if (alpha >= beta) {
+            break;
+        }
+    }
+    return best;
+}
+
 int Negamax(Searcher* s, const Position& pos, int depth, int alpha, int beta, int ply) {
     s->nodes++;
     if (pos.result != Result::Ongoing) {
         return Terminal(*s, pos, ply);
     }
     if (!s->solve && depth <= 0) {
-        return Evaluate(*s->map, pos, pos.side);
+        return Quiesce(s, pos, alpha, beta, ply, 0);
     }
     if (OutOfBudget(s)) {
         return 0;

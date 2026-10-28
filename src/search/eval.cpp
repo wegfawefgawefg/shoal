@@ -53,6 +53,11 @@ int Evaluate(const Map& map, const Position& pos, int side) {
         score[capturer] += stake * done / kCapturePoints / 2;
     }
 
+    // funds buy units where bases build; elsewhere they only pay for repairs
+    for (int owner = 0; owner < 2; owner++) {
+        score[owner] += map.production ? pos.funds[owner] : pos.funds[owner] / 5;
+    }
+
     return score[side] - score[side ^ 1];
 }
 
