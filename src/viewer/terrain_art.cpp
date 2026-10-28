@@ -34,6 +34,9 @@ Terrain Beside(const Map& map, int tile, int dir) {
 }
 
 bool RoadJoins(Terrain t) {
+    if (t == Terrain::Count) {
+        return false;
+    }
     return t == Terrain::Road || t == Terrain::Bridge || Spec(t).property;
 }
 
