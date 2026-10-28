@@ -83,6 +83,10 @@ void GenerateMoves(const Map& map, const Position& pos, MoveList* list);
 void ApplyMove(const Map& map, Position* pos, const Move& move);
 bool IsLegal(const Map& map, const Position& pos, const Move& move);
 
+// tiles a unit can end its move on (its own tile included); friends can be passed, enemies
+// block; returns the count
+int ReachableTiles(const Map& map, const Position& pos, const Unit& unit, int out[kMaxTiles]);
+
 // damage percent a full attack would do; 0 when the attacker cannot hit the defender
 int AttackDamage(const Map& map, const Unit& attacker, const Unit& defender, int defender_tile);
 

@@ -8,7 +8,8 @@ namespace {
 
 constexpr int kMaxMovePoints = 10;
 
-// tiles a unit can end its move on, by cheapest path; friends can be passed, enemies block
+} // namespace
+
 int ReachableTiles(const Map& map, const Position& pos, const Unit& unit, int out[kMaxTiles]) {
     const UnitSpec& spec = Spec(unit.type);
     int tile_count = map.width * map.height;
@@ -61,6 +62,8 @@ int ReachableTiles(const Map& map, const Position& pos, const Unit& unit, int ou
     }
     return count;
 }
+
+namespace {
 
 bool CanHit(const Unit& attacker, const Unit& defender) {
     if (PrimaryDamage(attacker.type, defender.type) > 0 && attacker.ammo > 0) {

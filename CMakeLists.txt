@@ -58,8 +58,9 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set_source_files_properties(${SHOAL_HOT_SOURCES} PROPERTIES COMPILE_OPTIONS "-O2")
 endif()
 
+find_package(Threads REQUIRED)
 add_executable(shoal src/main.cpp)
-target_link_libraries(shoal PRIVATE shoal_core)
+target_link_libraries(shoal PRIVATE shoal_core Threads::Threads)
 shoal_warnings(shoal)
 
 file(GLOB SHOAL_TEST_SOURCES CONFIGURE_DEPENDS tests/*.cpp)
