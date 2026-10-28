@@ -1,0 +1,82 @@
+cmake_minimum_required(VERSION 3.20)
+
+project(shoal VERSION 0.1.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+option(SHOAL_WARN_AS_ERROR "Treat warnings as errors." ON)
+option(SHOAL_SANITIZERS "Build with AddressSanitizer and UBSan." OFF)
+option(SHOAL_NATIVE "Tune for this machine's CPU." OFF)
+
+# fast rebuilds: ccache and lld when present
+find_program(SHOAL_CCACHE ccache)
+if (SHOAL_CCACHE)
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${SHOAL_CCACHE}")
+endif()
+find_program(SHOAL_LLD ld.lld)
+if (SHOAL_LLD AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU" AND NOT APPLE)
+    add_link_options(-fuse-ld=lld)
+endif()
+
+function(shoal_warnings target)
+    target_compile_options(${target} PRIVATE -Wall -Wextra -Wshadow -Wconversion
+                                             -Wno-sign-conversion)
+    if (SHOAL_WARN_AS_ERROR)
+        target_compile_options(${target} PRIVATE -Werror)
+    endif()
+    if (SHOAL_SANITIZERS)
+        target_compile_options(${target} PRIVATE -fsanitize=address,undefined
+                                                 -fno-omit-frame-pointer)
+        target_link_options(${target} PRIVATE -fsanitize=address,undefined)
+    endif()
+    if (SHOAL_NATIVE)
+        target_compile_options(${target} PRIVATE -march=native)
+    endif()
+endfunction()
+
+set(GSEXP_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GSEXP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GSEXP_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
+add_subdirectory(third_party/gsexp)
+
+# the engine: everything but the front ends, shared by the tool, the viewer and the tests
+file(GLOB_RECURSE SHOAL_SOURCES CONFIGURE_DEPENDS src/*.cpp)
+list(FILTER SHOAL_SOURCES EXCLUDE REGEX ".*/src/main\\.cpp$")
+list(FILTER SHOAL_SOURCES EXCLUDE REGEX ".*/src/viewer/.*")
+add_library(shoal_core STATIC ${SHOAL_SOURCES})
+target_include_directories(shoal_core PUBLIC src)
+target_link_libraries(shoal_core PUBLIC gsexp::gsexp)
+shoal_warnings(shoal_core)
+# search speed matters even while debugging rules: keep the hot code optimised
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    file(GLOB SHOAL_HOT_SOURCES CONFIGURE_DEPENDS src/game/*.cpp src/search/*.cpp)
+    set_source_files_properties(${SHOAL_HOT_SOURCES} PROPERTIES COMPILE_OPTIONS "-O2")
+endif()
+
+add_executable(shoal src/main.cpp)
+target_link_libraries(shoal PRIVATE shoal_core)
+shoal_warnings(shoal)
+
+file(GLOB SHOAL_TEST_SOURCES CONFIGURE_DEPENDS tests/*.cpp)
+add_executable(shoal_tests ${SHOAL_TEST_SOURCES})
+target_link_libraries(shoal_tests PRIVATE shoal_core)
+target_compile_definitions(shoal_tests PRIVATE SHOAL_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+shoal_warnings(shoal_tests)
+
+# the replay viewer: SDL3 from the system, built when it is found
+find_package(SDL3 CONFIG QUIET)
+if (SDL3_FOUND)
+    option(SHOAL_VIEWER "Build the SDL3 replay viewer." ON)
+else()
+    option(SHOAL_VIEWER "Build the SDL3 replay viewer." OFF)
+endif()
+file(GLOB SHOAL_VIEWER_SOURCES CONFIGURE_DEPENDS src/viewer/*.cpp)
+if (SHOAL_VIEWER AND SHOAL_VIEWER_SOURCES)
+    add_executable(shoal_viewer ${SHOAL_VIEWER_SOURCES})
+    target_link_libraries(shoal_viewer PRIVATE shoal_core SDL3::SDL3)
+    target_include_directories(shoal_viewer PRIVATE src/viewer)
+    shoal_warnings(shoal_viewer)
+endif()
