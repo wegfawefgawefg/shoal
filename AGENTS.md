@@ -5,7 +5,7 @@ engine, and a native replay viewer. Read `docs/plan.md` first (goals, status, qu
 `docs/rules.md`, `docs/formats.md`, `docs/engine.md`.
 
 - Build: `cmake --preset release && cmake --build --preset release` (Ninja, ccache, lld;
-  `dev` and `asan` presets too). Tests: `./build/shoal_tests`. Keep the build fast.
+  `dev` and `asan` presets too). The viewer builds when SDL3 is found (`-DSHOAL_VIEWER=ON`). Tests: `./build/shoal_tests`. Keep the build fast.
 - C++20 in the splonks-cpp "C+-" style: `namespace shoal`, PascalCase functions, snake_case
   fields and locals, `kConstants`, plain structs, no exceptions. Format with `.clang-format`.
   Small files (300-500 lines) grouped by domain: `src/rules`, `src/game`, `src/io`,
@@ -16,8 +16,9 @@ engine, and a native replay viewer. Read `docs/plan.md` first (goals, status, qu
 - Heavy runs (solves, matches, tuning, fuzzing) go to stevejobs (`ssh mini`, 14-core M4 Pro;
   leave 2 cores free; `scripts/mini_sync.sh` pushes HEAD and builds in `~/shoal`). Small
   runs locally are fine.
-- Never open a viewer window on the owner's display: use `--screenshot` with the offscreen
-  driver (see `docs/viewer.md`).
+- Never open a viewer window on the owner's display: test with
+  `env -u DISPLAY -u WAYLAND_DISPLAY ./build/shoal_viewer FILE --screenshot out.bmp`
+  (software renderer, no window; README "Viewer").
 - No Nintendo assets. The viewer art is our own.
 
 ## File Size

@@ -19,11 +19,12 @@ Scope: AW2 tier rules (AWBW), no luck, no COs, production yes, fog later.
 - Ply search + exact solver (`shoal search --solve`). Tiny results in `docs/findings.md`.
 - Turn planner: beats the ply search and greedy; deeper is better (findings).
 - Map generator, match harness, SPSA tuner.
-- Viewer: in progress on branch `viewer`.
+- Viewer: replay with eval bar, last-move marks, move list; minimal play mode (`P`).
 
 ## Queue
 
-1. Merge the viewer; replay engine games with evals.
+1. Viewer: engine analysis on demand (eval and best line for the shown position), blunder
+   marks and an eval graph, keep hand-played lines as a variation, save them.
 2. Tune planner weights (SPSA run on stevejobs), then re-check against the defaults.
 3. Planner on 16x16 with big armies: profile, cut costs (threat map updates, wider delta
    scoring), measure depth reached.
