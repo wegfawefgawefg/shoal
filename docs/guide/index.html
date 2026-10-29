@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Advance Wars, as the engine sees it</title>
+<style>
+  :root {
+    --ink: #111;
+    --paper: #fafaf7;
+    --line: #111;
+    --dim: #555;
+    --mark: #e8572a;
+    --cool: #6a4fd6;
+    --tint: #efeee8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e8e6df;
+      --paper: #16171b;
+      --line: #e8e6df;
+      --dim: #a3a19a;
+      --tint: #22242a;
+    }
+  }
+  * { border-radius: 0; box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.55 "Iosevka", "JetBrains Mono", "DejaVu Sans Mono", monospace;
+  }
+  main { max-width: 920px; margin: 0 auto; padding: 32px 16px 80px; }
+  header { border: 2px solid var(--line); padding: 16px 20px; margin-bottom: 32px; }
+  h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: 0.02em; }
+  h2 {
+    font-size: 19px;
+    margin: 44px 0 12px;
+    padding: 6px 10px;
+    border: 2px solid var(--line);
+    background: var(--tint);
+  }
+  h3 { font-size: 16px; margin: 24px 0 8px; }
+  p, li { max-width: 78ch; }
+  .dim { color: var(--dim); }
+  figure { margin: 18px 0; border: 2px solid var(--line); }
+  figure img { display: block; width: 100%; height: auto; border-bottom: 2px solid var(--line); }
+  figcaption { padding: 8px 12px; font-size: 14px; }
+  table { border-collapse: collapse; margin: 12px 0; width: 100%; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; vertical-align: top; }
+  th { background: var(--tint); }
+  td.n { text-align: right; }
+  .do, .dont { border: 2px solid var(--line); padding: 10px 14px; margin: 12px 0; }
+  .do { border-left: 10px solid #3a9a4a; }
+  .dont { border-left: 10px solid var(--mark); }
+  .pair { display: grid; grid-template-columns: 1fr; gap: 0; }
+  code { background: var(--tint); padding: 0 4px; }
+  .claim { border-left: 4px solid var(--cool); padding-left: 10px; }
+  nav ol { columns: 2; padding-left: 20px; }
+  @media (max-width: 640px) { nav ol { columns: 1; } }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>Advance Wars, as the engine sees it</h1>
+  <div>A guide for players past the basics, written from what <b>shoal</b> (an AW engine) has
+  measured so far. Rules: Advance Wars 2 as Advance Wars By Web plays it, <b>no luck, no COs, no
+  fog</b>. Every number here comes from exact solving or engine self-play unless marked as
+  opinion.</div>
+  <div class="dim">Edition 1, 2026-10-29. This page will change as the engine learns.</div>
+</header>
+
+<nav>
+<ol>
+  <li><a href="#threat">Threat range is the whole game</a></li>
+  <li><a href="#first">The first strike decides even fights</a></li>
+  <li><a href="#standoff">Don't step in: the standoff</a></li>
+  <li><a href="#terrain">If you must step in, step onto stars</a></li>
+  <li><a href="#indirect">Artillery and rockets</a></li>
+  <li><a href="#values">What units are worth</a></li>
+  <li><a href="#economy">Tempo, cities and the clock</a></li>
+  <li><a href="#solved">Solved tiny games</a></li>
+  <li><a href="#critique">What's wrong with no-fog AW</a></li>
+  <li><a href="#open">Open questions</a></li>
+</ol>
+</nav>
+
+<h2 id="threat">1. Threat range is the whole game</h2>
+
+<p>A unit can attack anything it could stand next to <i>this turn</i>. So the tiles it
+threatens are its move plus its attack reach. Indirect units can't move and fire in the same
+turn, so they only threaten their firing ring from where they stand.</p>
+
+<table>
+  <tr><th>unit</th><th>move</th><th>reach</th><th>threatens</th></tr>
+  <tr><td>Infantry</td><td class="n">3</td><td class="n">1</td><td>4 tiles (less over rough terrain)</td></tr>
+  <tr><td>Mech</td><td class="n">2</td><td class="n">1</td><td>3 (mountains cost it only 1)</td></tr>
+  <tr><td>Tank, Neotank, Anti-Air</td><td class="n">6</td><td class="n">1</td><td>7 on roads and plains</td></tr>
+  <tr><td>Md.Tank</td><td class="n">5</td><td class="n">1</td><td>6</td></tr>
+  <tr><td>Recon</td><td class="n">8</td><td class="n">1</td><td>9 on roads (tires hate forests)</td></tr>
+  <tr><td>Artillery</td><td class="n">5</td><td class="n">2-3</td><td>only its 2-3 ring, from where it stands</td></tr>
+  <tr><td>Rockets</td><td class="n">5</td><td class="n">3-5</td><td>only its 3-5 ring</td></tr>
+  <tr><td>B-Copter</td><td class="n">6</td><td class="n">1</td><td>7, over anything</td></tr>
+  <tr><td>Battleship</td><td class="n">5</td><td class="n">2-6</td><td>only its 2-6 ring</td></tr>
+</table>
+
+<p>Real movement is measured in move points (woods cost treads 2, mountains block them), and
+your own units don't block you while enemy units do. But the rule of thumb holds: <b>know
+the number for every enemy unit on the board</b>.</p>
+
+<h2 id="first">2. The first strike decides even fights</h2>
+
+<p>Combat isn't symmetric. The attacker hits at full strength. The defender counters with
+whatever hit points it has left, and a hurt unit hits weaker. Two full infantry on plains:</p>
+
+<div class="pair">
+<figure><img src="img/snowball-1.png" alt="first strike"><figcaption>Iris strikes first: Ember's
+infantry drops 10 &rarr; 6, and its counter only takes Iris to 8.</figcaption></figure>
+<figure><img src="img/snowball-2.png" alt="second exchange"><figcaption>Ember hits back as a 6:
+Iris 8 &rarr; 5, and Iris's counter leaves Ember at 3.</figcaption></figure>
+<figure><img src="img/snowball-3.png" alt="the end"><figcaption>Iris finishes it and is left
+standing at 5. Same units, same terrain: the side that struck first wins.</figcaption></figure>
+</div>
+
+<p class="claim">With no luck roll, an even 1-vs-1 fight is decided before it starts: whoever
+gets the first hit wins it. With luck on, it's very likely rather than certain.</p>
+
+<h2 id="standoff">3. Don't step in: the standoff</h2>
+
+<p>Section 2 has a sting. To attack on your turn, the enemy has to be inside your threat range
+<i>when your turn starts</i>. If you walk into its threat range and stop, <b>it</b> gets the
+first strike.</p>
+
+<div class="dont"><b>Don't</b>: walk from b2 to d2. That's 4 tiles from the enemy infantry,
+inside its threat range.</div>
+<figure><img src="img/step-in.png" alt="stepping into range"><figcaption>Iris walks to e2 and hits
+first: 10 &rarr; 6 for Ember. From here Ember loses the duel.</figcaption></figure>
+
+<div class="do"><b>Do</b>: stop one tile outside the enemy's threat range (5 tiles for infantry)
+and let it be the one who steps in.</div>
+<figure><img src="img/stay-out.png" alt="staying out of range"><figcaption>Ember stopped at c2.
+Iris's reach is highlighted: it can't get next to c2, so it can't attack.</figcaption></figure>
+
+<p>Two equal armies that can both play this way will wait forever. You can always end your
+turn without moving, so unlike chess nobody is ever forced to step in. The exact solver
+confirms it: infantry against infantry on an empty 4x4 or 5x5 is a <b>draw with perfect
+play</b>. On a 3x3, where the first player can hit on turn one, it's a first-player win.</p>
+
+<p>What breaks a standoff: something worth taking (cities, income, the HQ), terrain that
+softens the first hit, bait units, and units whose reach outranges the enemy's threat
+(section 5).</p>
+
+<h2 id="terrain">4. If you must step in, step onto stars</h2>
+
+<p>Defense stars cut damage by 10% per star per displayed hit point of the defender. A
+mountain is 4 stars. Same approach as section 3, but stopping on the mountain at d2:</p>
+<figure><img src="img/mountain.png" alt="stepping onto a mountain"><figcaption>Iris still strikes
+first, but Ember only drops to 7 instead of 6 and counters harder: 7 against 7 afterwards. Step
+in onto a mountain and the first strike is worth almost nothing.</figcaption></figure>
+
+<div class="do"><b>Do</b>: when you have to advance into threat range, end the move on woods,
+cities or mountains, and make the enemy attack from plains.</div>
+
+<p>Stars scale with the defender's <i>displayed</i> hit points, so a hurt unit gets less from
+terrain. Terrain protects healthy units most.</p>
+
+<h2 id="indirect">5. Artillery and rockets</h2>
+
+<p>Indirect units take no counterattacks, but <b>they can't move and fire in the same
+turn</b>, and artillery can't fire at range 1.</p>
+
+<figure><img src="img/art-ring.png" alt="artillery ring"><figcaption>The tank stopped 3 tiles from
+the artillery, inside its ring. The artillery fires without moving: 10 &rarr; 4, and the tank
+can't counter.</figcaption></figure>
+
+<figure><img src="img/art-pinned.png" alt="artillery pinned"><figcaption>An infantry right next to
+the artillery. The artillery can move away (highlighted) but has nothing to fire at: it can't
+hit range 1, and moving means no firing this turn.</figcaption></figure>
+
+<p class="claim">Artillery is a <b>defender's</b> unit. Parked behind a wall of direct units
+that stop anyone getting adjacent, it turns its 2-3 ring into a no-go zone. It makes stepping
+in worse, not better. It can't break a standoff, because to shell a unit it must already have
+ended its turn within 3 tiles, which is inside most enemies' threat range.</p>
+
+<figure><img src="img/rockets.png" alt="rockets outrange infantry"><figcaption>Rockets fire at 5
+tiles. That's outside an infantry's threat range of 4, so the infantry can't reach them back:
+10 &rarr; 2.</figcaption></figure>
+
+<p class="claim">What breaks a standoff is <b>range that exceeds the enemy's threat
+range</b>: rockets (5) against infantry and mechs (4 and 3), battleships (6) against nearly
+anything near the shore. Against tanks (threat 7) rockets are inside the zone again.</p>
+
+<h2 id="values">6. What units are worth</h2>
+
+<p>The engine tunes its own sense of value by playing itself thousands of times and keeping
+whatever wins (SPSA). One of the things it tunes is each unit type's worth as a fraction of
+its price:</p>
+
+<table>
+  <tr><th>unit</th><th>cost</th><th>worth vs cost</th><th>reading</th></tr>
+  <tr><td>Infantry</td><td class="n">1000</td><td class="n">198%</td><td>best value in the game: captures, blocks, soaks hits</td></tr>
+  <tr><td>Tank</td><td class="n">7000</td><td class="n">139%</td><td>the efficient fighting unit</td></tr>
+  <tr><td>Anti-Air</td><td class="n">8000</td><td class="n">107%</td><td>fine against foot soldiers and copters, poor against armour</td></tr>
+  <tr><td>Mech</td><td class="n">3000</td><td class="n">104%</td><td>worth its price</td></tr>
+  <tr><td>Neotank</td><td class="n">22000</td><td class="n">96%</td><td>strong, but money is better spread out</td></tr>
+  <tr><td>Artillery</td><td class="n">6000</td><td class="n">90%</td><td>see section 5: valuable mostly on defence</td></tr>
+  <tr><td>Recon</td><td class="n">4000</td><td class="n">85%</td><td>without fog its eyes are worthless</td></tr>
+  <tr><td>Rockets</td><td class="n">15000</td><td class="n">81%</td><td>expensive for what it does here</td></tr>
+  <tr><td>Md.Tank</td><td class="n">16000</td><td class="n">73%</td><td>two tanks beat one md tank for the money</td></tr>
+</table>
+
+<p class="dim">Caveats: tuned on generated 9x9 to 18x18 maps with ground units, one to three
+bases, short time controls. Air and sea values are still being tuned. These are "worth to this
+engine's style of play", not universal truths. They do match what strong players say: build
+infantry, build tanks, be careful with expensive units.</p>
+
+<p>Composition matters too. An early engine version valued a unit by its own price instead of
+by the damage it would actually do, and it built anti-air by the hundred: 440 in one batch of
+games, trading at 0.66 funds dealt per fund lost. Valuing <i>damage done</i> instead cut that
+to zero, with the same playing strength.</p>
+
+<div class="dont"><b>Don't</b> judge a unit by what it can hit. Judge it by what it takes off
+the enemy per fund spent. Anti-air "can hit" a tank for 25% of base damage. That isn't the same
+thing.</div>
+
+<h2 id="economy">7. Tempo, cities and the clock</h2>
+
+<h3>Moving first is worth about 3000 funds</h3>
+<p>Same engine on both sides, symmetric 12x12 maps with one base each. The first player wins
+most decisive games. Giving the second player extra starting funds finds the break-even:</p>
+<table>
+  <tr><th>second player's extra funds</th><th>first player won</th><th>second player won</th></tr>
+  <tr><td class="n">0</td><td class="n">20</td><td class="n">8</td></tr>
+  <tr><td class="n">2000</td><td class="n">18</td><td class="n">10</td></tr>
+  <tr><td class="n">3000</td><td class="n">31</td><td class="n">25</td></tr>
+  <tr><td class="n">4000</td><td class="n">10</td><td class="n">18</td></tr>
+</table>
+<p>That's three infantry, or a day and a half of early income. It comes from the same place as
+sections 2 and 3: the first mover gets the first capture of every contested city and the first
+strike of every fight it chooses.</p>
+
+<h3>Cities</h3>
+<p>A city pays 1000 a day and repairs your units, and you don't need to stand on it: an enemy
+infantry needs two turns on it to capture it, so covering the tile with your threat range is
+enough. The tuned eval values a property at about 1300 plus a day's income for each of up to
+nine remaining days, about 10000 funds early in a game, roughly one tank. <span class="dim">This
+is a tuned weight, not a measurement yet. A direct measurement is queued (section 10).</span></p>
+
+<h3>Don't sit on a lead</h3>
+<figure><img src="img/day-limit-loss.png" alt="lost on the day limit"><figcaption>Ember (orange)
+had over twice the army for most of this 16x16 game and lost anyway, 13 properties to 19, on
+the day limit. The eval graph on the right shows the collapse at the end. A material lead that
+doesn't turn into properties, or into the enemy HQ, is worth nothing when the clock runs
+out.</figcaption></figure>
+
+<h2 id="solved">8. Solved tiny games</h2>
+
+<p>The engine solves small games exactly: every line, both sides perfect.</p>
+<table>
+  <tr><th>map</th><th>setup</th><th>perfect play</th></tr>
+  <tr><td>duel3</td><td>3x3, infantry vs infantry, corners</td><td>first player wins (hits on turn one)</td></tr>
+  <tr><td>duel4, duel5</td><td>4x4 and 5x5, same</td><td>draw: nobody steps in</td></tr>
+  <tr><td>woods5</td><td>5x5 with a line of woods</td><td>draw</td></tr>
+  <tr><td>tanks5</td><td>5x5, tank vs tank</td><td>draw: both sit</td></tr>
+  <tr><td>city3, city5</td><td>cities in the middle</td><td>first player wins</td></tr>
+  <tr><td>hqrace4</td><td>4x4, an HQ each</td><td>first player wins</td></tr>
+  <tr><td>twoinf5</td><td>5x5, two infantry each</td><td>first player wins</td></tr>
+  <tr><td>tankinf5</td><td>tank vs two infantry, tank moves first</td><td>tank wins</td></tr>
+  <tr><td>hq5</td><td>5x5, HQ and a city, infantry and tank each</td><td>draw with a 1-5 day limit; <b>first player wins with 6 days</b></td></tr>
+</table>
+<figure><img src="img/solved-city5.png" alt="solved city5"><figcaption>city5, perfect play: Ember
+heads for the middle city at once. Something to take is what turns a draw into a
+win.</figcaption></figure>
+<p class="dim">The pattern: with nothing to fight over, equal forces draw. Add a target and the
+side that moves first wins.</p>
+
+<h2 id="critique">9. What's wrong with no-fog AW</h2>
+<p class="dim">Measured where marked, opinion otherwise.</p>
+<ol>
+  <li><b>It rewards waiting.</b> (Measured on tiny maps.) Stepping into threat range hands over
+  the first strike, and passing is always legal, so equal fights stall. The game moves only
+  because of economy and the clock, not because of combat.</li>
+  <li><b>The first move is worth a lot.</b> (Measured: ~3000 funds on small maps.) Bigger,
+  hand-made competitive maps soften this, but the root cause, first strike and first capture,
+  is built into the turn structure.</li>
+  <li><b>Too many games are decided by counting.</b> (Opinion, backed by self-play: most
+  engine games here end on the day limit.) A property tiebreak cuts the game off. It doesn't
+  resolve it.</li>
+  <li><b>Indirects strengthen the standoff.</b> (Reasoning from the rules, section 5.) The
+  defender's best unit makes approaching worse. Only long-range units cut through.</li>
+  <li><b>Without luck it's a calculation game.</b> (Opinion.) Every exchange is known in
+  advance. That suits an engine and suits analysis, but early fights are often already decided
+  on the board.</li>
+  <li><b>Recons are pointless.</b> (Measured: 85% worth.) A unit built around vision has nothing
+  to do when everything is visible.</li>
+</ol>
+<p>Fog changes most of this. You can only attack what you can see, and infantry see 2 tiles
+while threatening 4, so you can step inside the enemy's threat range without being seen and
+take the first strike yourself. Approaching becomes good again, and vision becomes the
+resource that matters. That's an open question for the engine, not a measurement yet.</p>
+
+<h2 id="open">10. Open questions</h2>
+<ul>
+  <li><b>Fog</b>: does hidden information end the standoff? Solve tiny fog games (with methods
+  for hidden-information games) and compare to the draws in section 8.</li>
+  <li><b>Artillery</b>: exact answers for infantry + artillery against infantry + infantry,
+  rockets against infantry, and a city between two defended lines.</li>
+  <li><b>No day limit</b>: play and tune with HQ and rout as the only endings, and see what
+  changes in unit values and in who wins.</li>
+  <li><b>A value table for everything</b>: cities, the first move, each unit type and terrain,
+  each measured as "how many funds make it even" (like section 7).</li>
+  <li><b>Rule variants</b>: fixed armies without production, combat-centred win conditions,
+  compensation for the second player, simultaneous turns, each tested by engine self-play for
+  how often the first player wins, the draw rate and game length.</li>
+</ul>
+
+<p class="dim">Made with shoal: github.com/wegfawefgawefg/shoal. Pictures are rendered by the
+shoal viewer from the positions in <code>docs/guide/positions/</code>
+(<code>python3 docs/guide/render.py</code>).</p>
+
+</main>
+</body>
+</html>

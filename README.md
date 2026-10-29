@@ -40,7 +40,8 @@ for real maps up to 32x32.
 ./build/shoal fuzz --games 1000000 --threads 8                         # rules fuzzing
 ```
 
-What it has found so far is in `docs/findings.md`; solved perfect-play lines in
+A player's guide built from what it has learned: `docs/guide/index.html`. The raw numbers are
+in `docs/findings.md`; solved perfect-play lines in
 `games/solved/`.
 
 ## Viewer

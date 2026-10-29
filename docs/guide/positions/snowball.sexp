@@ -1,0 +1,1 @@
+(game (map (name "first strike snowball") (day-limit 9) (tiles "........" "........" "........") (unit 0 inf b2) (unit 1 inf h2)) (moves "b2 d2" "end" "h2 e2 x d2" "end" "d2 d2 x e2" "end" "e2 e2 x d2"))
