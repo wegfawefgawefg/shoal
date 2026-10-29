@@ -68,18 +68,23 @@ int CapturerPlacement(const PlanContext& ctx, const Position& pos, const Unit& u
     return Clamp0(ctx.weights.capture_reach - best_turns * ctx.weights.capture_per_turn);
 }
 
-// fighters want enemies they can hit within reach; worth a slice of their own cost
+// fighters want enemies within reach that they hurt; each enemy is worth the funds a full
+// strength hit on it would take, more the fewer turns away it is
 int FighterPlacement(const PlanContext& ctx, const Position& pos, const Unit& unit) {
     const Map& map = *ctx.map;
     const UnitSpec& spec = Spec(unit.type);
-    int best_turns = 99;
+    int best = 0;
     for (int i = 0; i < pos.unit_count; i++) {
         const Unit& enemy = pos.units[i];
         if (enemy.owner == ctx.side) {
             continue;
         }
-        if (PrimaryDamage(unit.type, enemy.type) == 0 &&
-            SecondaryDamage(unit.type, enemy.type) == 0) {
+        int damage = PrimaryDamage(unit.type, enemy.type);
+        int secondary = SecondaryDamage(unit.type, enemy.type);
+        if (secondary > damage) {
+            damage = secondary;
+        }
+        if (damage == 0) {
             continue;
         }
         int points = TerrainDistance(*ctx.distances, spec.move_type, unit.tile, enemy.tile);
@@ -94,12 +99,13 @@ int FighterPlacement(const PlanContext& ctx, const Position& pos, const Unit& un
             }
         }
         int turns = (points + spec.move - 1) / spec.move;
-        if (turns < best_turns) {
-            best_turns = turns;
+        int hit = ctx.weights.fight_damage ? damage * Spec(enemy.type).cost / 100 : spec.cost;
+        int value = Clamp0(ctx.weights.fight_turns - turns) * hit;
+        if (value > best) {
+            best = value;
         }
     }
-    return Clamp0((ctx.weights.fight_turns - best_turns) * spec.cost * ctx.weights.fight_share /
-                  1000);
+    return best * ctx.weights.fight_share / 1000;
 }
 
 struct WeightName {
@@ -116,6 +122,7 @@ const WeightName kWeightNames[] = {
     {"fight_share", &PlanWeights::fight_share},
     {"base_block", &PlanWeights::base_block},
     {"idle_funds", &PlanWeights::idle_funds},
+    {"fight_damage", &PlanWeights::fight_damage},
 };
 
 struct EvalWeightName {
