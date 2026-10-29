@@ -20,7 +20,7 @@ struct TurnPlan {
 struct PlannerLimits {
     double seconds = 1.0;
     int max_turns = 16; // turn depth: 1 = our turn then their greedy reply
-    int beam_width = 8; // candidate turns per side at each node
+    int beam_width = 12; // candidate turns per side at each node (12 beat 8 by ~100 elo)
     int threads = 1;    // more than one splits the root turns over threads
     bool quiet = false;
 };

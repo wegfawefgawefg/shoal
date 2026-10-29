@@ -22,7 +22,7 @@ struct EngineSpec {
     EngineKind kind = EngineKind::Plan;
     double seconds = 0.5; // per turn
     int turns = 16;
-    int beam = 8;
+    int beam = 12;
     int threads = 1;
     int leaf = 1;
     PlanWeights weights;

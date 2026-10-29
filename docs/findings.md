@@ -40,6 +40,8 @@ in the tiny range; bigger questions go to the planner.
 | SPSA run 1 weights | hand-set weights | 32 | +19 =9 -4 | +177 |
 | SPSA run 2 weights | run 1 weights | 32 | +22 =5 -5 | +206 |
 | run 2 + damage-weighted placement | run 1 weights, same code | 32 | +25 =5 -2 | +314 |
+| beam 12 (t=0.3) | beam 8 | 24 | +11 =9 -4 | +104 |
+| beam 16 (t=0.3) | beam 12 | 24 | +11 =5 -8 | +44 (noise) |
 
 In planner self-play the first player won 18 of 28 decisive games on 12x12: a first-turn
 edge shows up on small production maps too.
