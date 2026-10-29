@@ -40,3 +40,37 @@ in the tiny range; bigger questions go to the planner.
 
 In planner self-play the first player won 18 of 28 decisive games on 12x12: a first-turn
 edge shows up on small production maps too.
+
+## What self-play tuning says units are worth (SPSA, 2026-10-29)
+
+`shoal tune` plays the planner against itself with perturbed weights and keeps what wins.
+One set of weights is each unit type's worth as a percent of its cost in the static eval.
+After run 2 (validated: +206 elo over the run before):
+
+| unit | worth vs cost |
+| --- | --- |
+| Infantry | 181% |
+| Tank | 146% |
+| Anti-Air | 111% |
+| Mech | 103% |
+| Artillery | 94% |
+| Md.Tank | 73% |
+| Recon | 69% |
+
+The same picture strong human players have: infantry are the best value in the game
+(cheap, they capture, they soak hits), tanks are the efficient fighting unit, and Md.Tanks
+and recons cost more than they bring. Neotank, rockets and APC were not tuned yet.
+
+## Army composition
+
+`shoal stats` over 12 self-play games on 12x12 maps, before and after weighting a
+fighter's pull toward an enemy by the damage it would deal (instead of by its own cost):
+
+- before: 192 anti-air built (most after day 10), trading at 0.66 funds dealt per fund lost
+- after: no anti-air; infantry, tanks, neotanks and artillery; same strength in matches
+
+## First-player edge on generated maps
+
+Across planner self-play matches on generated 10x10 and 12x12 maps (one base each, both
+colours on every map), the first player won 97 decisive games to the second player's 41.
+The edge is large on small symmetric maps; real competitive maps compensate for it.
