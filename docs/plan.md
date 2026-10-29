@@ -15,10 +15,13 @@ Scope: AW2 tier rules (AWBW), no luck, no COs, production yes, fog later.
 ## Status
 
 - Rules engine: ground units, movement, combat with counters and ammo, capture, repair,
-  income, builds, rout/hq/day-limit endings. Fuzzed for board invariants.
+  income, builds, join, APC (load, drop, supply), rout/hq/day-limit endings. Up to 32x32
+  and 128 units. Fuzzed for board invariants.
+- Air and sea units: in progress on branch `airsea`.
 - Ply search + exact solver (`shoal search --solve`). Tiny results in `docs/findings.md`.
-- Turn planner: beats the ply search and greedy; deeper is better (findings).
-- Map generator, match harness, SPSA tuner.
+- Turn planner: beats the ply search and greedy; deeper is better (findings). ~30k candidate
+  turns/s on a 16x16 mid-game (5-7 turns deep in 1 s), threaded root search for analysis.
+- Map generator, match harness, SPSA tuner (run 1 adopted: +177 elo), `shoal stats`.
 - Viewer: replay with eval bar, last-move marks, move list; minimal play mode (`P`).
 - Analysis: `shoal analyse` scores every turn start and marks inaccuracies, mistakes and
   blunders into the game file; the viewer draws the eval graph, the marks, the engine's best
@@ -27,13 +30,12 @@ Scope: AW2 tier rules (AWBW), no luck, no COs, production yes, fog later.
 ## Queue
 
 1. Viewer: keep hand-played lines as a variation next to the game, save them.
-2. Tune planner weights (SPSA run on stevejobs), then re-check against the defaults.
-3. Planner on 16x16 with big armies: profile, cut costs (threat map updates, wider delta
-   scoring), measure depth reached.
+2. Keep tuning (SPSA run 2 on stevejobs), validate each candidate by match before adopting.
+3. Merge air/sea; retune with them; water maps in the generator.
 4. Tactics inside a turn: small exact search over attack orders (who hits first) for the
    units that can reach the same targets.
-5. Solver speed: partial-order reduction of independent unit actions; bigger table.
+5. Solver speed: tried partial-order reduction keyed into the table: worse (it splits
+   transpositions the table already merges). Next idea: a bigger table with buckets.
 6. Viewer play mode: let the engine answer a hand-played turn.
-7. APC load/unload and supply, join, then air and sea.
-8. Learned eval: train a small net on planner/self-play positions (stevejobs).
-9. Fog.
+7. Learned eval: train a small net on planner/self-play positions (stevejobs).
+8. Fog.
