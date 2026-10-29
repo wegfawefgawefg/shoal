@@ -361,6 +361,8 @@ PlannerResult PlanTurn(Planner* planner, const Position& pos, const PlannerLimit
         result.turn = roots[static_cast<std::size_t>(best_index)];
         result.score = best;
         result.turns = turns;
+        // the best turn goes first next depth: it sets the bound the others are cut against
+        std::rotate(roots.begin(), roots.begin() + best_index, roots.begin() + best_index + 1);
         double seconds =
             std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
         if (!limits.quiet) {
