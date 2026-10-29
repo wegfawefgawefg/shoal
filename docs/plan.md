@@ -31,18 +31,26 @@ Scope: AW2 tier rules (AWBW), no luck, no COs, production yes, fog later.
   blunders into the game file; the viewer draws the eval graph, the marks, the engine's best
   turn as arrows, and runs the planner live on any position (`A`).
 
-## Research (owner, 2026-10-29)
+## Research (owner, 2026-10-29), in this order
 
-Each answers a question in `docs/guide/index.html` section 10; results go into the guide.
-
-1. Fog: tiny fog games solved with hidden-information methods; does fog end the standoff?
-2. Artillery and range: exact solves of inf+art vs inf+inf, rockets vs infantry, a city
+1. Komi: per-map second-player compensation in funds, found by self-play (like the 3000 on
+   12x12). Makes normal AW fair for a 1v1 site.
+2. No day limit: HQ and rout as the only endings (draw by repetition or a long cap). Retune and
+   compare unit values, first-player edge and game length with the day-limit results.
+3. Simultaneous turns, as separate rule variants on the same units and damage:
+   a. WEGO (Frozen Synapse style): both sides plan all units' orders in a timed planning phase,
+      then the turn plays out at once on a tick clock; collisions and contact fights resolved by
+      fixed rules. Solvable on tiny boards as simultaneous-move games (mixed strategies).
+   b. Real time (StarCraft style): orders any time, units step on a clock (one speed for all, or
+      AW move points as speeds), fights on contact with attack cooldowns.
+   Measure each by self-play: first-player edge (should vanish), draw rate, game length.
+4. Fog: tiny fog games with hidden-information methods; does fog end the standoff?
+5. Artillery and range: exact solves of inf+art vs inf+inf, rockets vs infantry, a city
    between two defended lines.
-3. No day limit: HQ and rout as the only endings; retune and compare unit values and results.
-4. Value table: cities, the first move, unit types, terrain, each as "funds that make it even".
-5. Rule variants for a fair, combat-driven 1v1: fixed armies without production, combat win
-   conditions, second-player compensation, simultaneous turns. Measured by self-play: first
-   player win rate, draw rate, game length, comebacks.
+6. Value table: cities, the first move, unit types, terrain, each as "funds that make it even".
+7. Mine engine games for whole-game strategy: what winners do differently.
+8. Other rule variants for a fair, combat-driven 1v1: fixed armies without production, combat
+   win conditions.
 
 ## Queue
 
