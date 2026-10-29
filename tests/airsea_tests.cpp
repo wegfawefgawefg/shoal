@@ -236,6 +236,13 @@ void AirSeaTransportTests(TestResults& r) {
     CHECK(r, UnitOn(*ship, pos, "a1")->cargo_count == 2);
     CHECK(r, Legal(*ship, pos, "a1 a1 drop b1 2"));
     CHECK(r, !Legal(*ship, pos, "a2 a1 load"));
+    // copters aboard a cruiser are rearmed and refuelled when their side's turn starts
+    UnitAt(*ship, &pos, "a1")->cargo[0].ammo = 0;
+    UnitAt(*ship, &pos, "a1")->cargo[0].fuel = 9;
+    CHECK(r, Play(*ship, &pos, "end"));
+    CHECK(r, Play(*ship, &pos, "end"));
+    const Cargo& aboard = UnitOn(*ship, pos, "a1")->cargo[0];
+    CHECK(r, aboard.ammo == 6 && aboard.fuel == 99);
 }
 
 void SubTests(TestResults& r) {

@@ -121,8 +121,15 @@ void StartTurn(const Map& map, Position* pos) {
     for (int i = 0; i < pos->unit_count; i++) {
         Unit& unit = pos->units[i];
         unit.done = 0;
-        if (unit.owner == side) {
-            Repair(map, pos, &unit);
+        if (unit.owner != side) {
+            continue;
+        }
+        Repair(map, pos, &unit);
+        // a cruiser rearms and refuels the copters aboard
+        for (int c = 0; c < unit.cargo_count && unit.type == UnitType::Cruiser; c++) {
+            Cargo& cargo = unit.cargo[c];
+            cargo.ammo = static_cast<std::uint8_t>(Spec(cargo.type).ammo);
+            cargo.fuel = static_cast<std::uint8_t>(Spec(cargo.type).fuel);
         }
     }
     // apcs refill the ammo and fuel of their own side's units next to them

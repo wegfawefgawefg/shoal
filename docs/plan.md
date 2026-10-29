@@ -14,8 +14,10 @@ Scope: AW2 tier rules (AWBW), no luck, no COs, production yes, fog later.
 
 ## Status
 
-- Rules engine: ground units, movement, combat with counters and ammo, capture, repair,
-  income, builds, rout/hq/day-limit endings. Fuzzed for board invariants.
+- Rules engine: all AW2 ground, air and sea units (no Dual Strike units), movement, combat
+  with counters and ammo, fuel, capture, repair at cities/airports/ports, income, builds at
+  bases/airports/ports, transports (APC, T-Copter, Lander, Cruiser), join, sub dive,
+  rout/hq/day-limit endings. Fuzzed for board invariants, water maps included.
 - Ply search + exact solver (`shoal search --solve`). Tiny results in `docs/findings.md`.
 - Turn planner: beats the ply search and greedy; deeper is better (findings).
 - Map generator, match harness, SPSA tuner.
@@ -34,6 +36,7 @@ Scope: AW2 tier rules (AWBW), no luck, no COs, production yes, fog later.
    units that can reach the same targets.
 5. Solver speed: partial-order reduction of independent unit actions; bigger table.
 6. Viewer play mode: let the engine answer a hand-played turn.
-7. APC load/unload and supply, join, then air and sea.
+7. Air and sea: tune the new unit values (`value_fighter` ...) and `fuel_risk` by SPSA on
+   `--water` maps; check landers and battleships get built and used.
 8. Learned eval: train a small net on planner/self-play positions (stevejobs).
 9. Fog.

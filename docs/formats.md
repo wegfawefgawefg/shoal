@@ -7,19 +7,25 @@
       (day-limit 10)         ; scored at the end of player 1's turn on this day
       (funds 0 0)            ; starting funds
       (income 1000)          ; per property per turn
-      (build inf mech tank)  ; optional: bases build these
+      (build inf mech tank)  ; optional: what bases, airports and ports build
       (tiles
         "h.w.."              ; one string per row, top first
         ".=...")
       (owner 0 a1)           ; owned properties; the rest are neutral
       (owner 1 e5)
-      (unit 0 inf b1)        ; owner, type, tile, optional internal hp 1..100
-      (unit 1 tank e4 70))
+      (unit 0 inf b1)
+      (unit 1 tank e4 70)     ; owner, type, tile, optional internal hp 1..100
+      (unit 1 recon d2 100 20)) ; then optional fuel (default a full tank)
 
 Terrain glyphs: `.` plain, `w` wood, `^` mountain, `=` road, `#` bridge, `~` river, `s` sea,
 `_` shoal, `r` reef, `c` city, `b` base, `h` hq, `a` airport, `p` port.
 
-Unit atoms: `inf mech recon tank md neo art rkt aa msl apc`.
+Unit atoms: `inf mech recon tank md neo art rkt aa msl apc fighter bomber bcopter tcopter
+bship cruiser lander sub`.
+
+`shoal show` letters: `I M R T D N A K F S P` for the ground units in that order, `J`
+fighter, `B` bomber, `H` b-copter, `Y` t-copter, `G` battleship, `C` cruiser, `L` lander,
+`U` sub; lower case for player 1.
 
 ## Game
 
@@ -32,8 +38,9 @@ Unit atoms: `inf mech recon tank md neo art rkt aa msl apc`.
         (turn 9 1189 4944 mistake "o8 build mech, o5 o3 cap")))
 
 Move text: `from to` (wait), `from to x target`, `from to cap`, `from to join`,
-`from to load`, `from to drop target` (second cargo: `... drop target 2`), `tile build type`,
-`end`.
+`from to load`, `from to drop target` (second cargo: `... drop target 2`), `from to dive`,
+`from to surface`, `tile build type`, `end`. After a drop the remaining cargo moves up a slot:
+a lander that dropped its first cargo drops the other with `tile tile drop target`.
 Loading a game replays it and rejects illegal moves.
 
 `(turn PLY SCORE LOSS MARK "MOVES")`, one per turn start in ply order:

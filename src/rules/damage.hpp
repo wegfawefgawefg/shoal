@@ -52,10 +52,10 @@ inline constexpr std::uint8_t kPrimaryDamage[kUnitTypeCount][kUnitTypeCount] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 55, 25, 95, 55},
 };
 
-// machine guns, which never run out. The chart's numbers where the gun is the weapon that
-// fires (against foot soldiers, copters, the cruiser's guns against air); the rows a unit
-// falls back to once its primary ammo is gone (mech, tank, md tank, neotank and b-copter
-// against vehicles) are AW2 values from memory, listed in docs/rules.md "Unconfirmed"
+// machine guns, which never run out. The AWBW chart's numbers where the gun is the weapon that
+// fires (against foot soldiers, copters, the cruiser's guns against air); what a mech, tank,
+// md tank, neotank or b-copter does to vehicles once its primary ammo is gone comes from the
+// AW2 chart at warswiki.org/wiki/Damage_chart (MG columns), read 2026-10-29
 inline constexpr std::uint8_t kSecondaryDamage[kUnitTypeCount][kUnitTypeCount] = {
     // infantry
     {55, 45, 12, 5, 1, 1, 15, 25, 5, 25, 14, 0, 0, 7, 30, 0, 0, 0, 0},
