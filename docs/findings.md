@@ -37,6 +37,9 @@ in the tiny range; bigger questions go to the planner.
 | plan t=0.5 turns=3 | ply t=0.5 | 24 | +18 =4 -2 | +280 |
 | plan t=0.5 turns=3 | plan t=0.5 turns=1 | 24 | +14 =6 -4 | +154 |
 | plan t=0.5 (deep) | plan t=0.5 turns=3 | 32 | +20 =4 -8 | +137 |
+| SPSA run 1 weights | hand-set weights | 32 | +19 =9 -4 | +177 |
+| SPSA run 2 weights | run 1 weights | 32 | +22 =5 -5 | +206 |
+| run 2 + damage-weighted placement | run 1 weights, same code | 32 | +25 =5 -2 | +314 |
 
 In planner self-play the first player won 18 of 28 decisive games on 12x12: a first-turn
 edge shows up on small production maps too.
