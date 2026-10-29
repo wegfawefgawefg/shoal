@@ -25,5 +25,6 @@ int RunTune(int argc, char** argv);
 int RunStats(int argc, char** argv);
 int RunDataset(int argc, char** argv);
 int RunFuzz(int argc, char** argv);
+int RunBook(int argc, char** argv);
 
 } // namespace shoal

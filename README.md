@@ -36,6 +36,8 @@ for real maps up to 32x32.
 ./build/shoal match --a plan:t=0.5 --b plan:t=0.5:beam=8 --gen 12 16    # engine vs engine
 ./build/shoal tune --threads 10                                         # SPSA on the eval
 ./build/shoal stats out/games/                                          # builds and trades
+./build/shoal book maps/mini8.sexp --turns 6 --time 20 --threads 12 --out mini8.book
+./build/shoal fuzz --games 1000000 --threads 8                         # rules fuzzing
 ```
 
 What it has found so far is in `docs/findings.md`; solved perfect-play lines in

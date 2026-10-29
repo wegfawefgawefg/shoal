@@ -3,7 +3,9 @@
 #include "search/planner.hpp"
 #include "search/search.hpp"
 #include "tests.hpp"
+#include "tools/book.hpp"
 
+#include <cstdio>
 #include <memory>
 #include <string>
 
@@ -76,4 +78,21 @@ void RunPlannerTests(TestResults& r) {
     limits.quiet = true;
     SearchResult found = Search(searcher.get(), pos, limits);
     CHECK(r, MoveText(*hq, found.best) == "d2 d2 cap");
+
+    // a book written out and read back still knows the start position's turn
+    auto book = std::make_unique<Book>();
+    book->map = *kill;
+    SetupStart(book->map, &pos);
+    std::vector<Move> turn = shot.turn.moves;
+    book->turns[pos.hash] = turn;
+    book->scores[pos.hash] = 7;
+    std::string path = std::string(SHOAL_SOURCE_DIR) + "/build-test-book.sexp";
+    CHECK(r, WriteWholeFile(path, WriteBookText(*book)));
+    auto read = std::make_unique<Book>();
+    std::string error;
+    CHECK(r, LoadBook(path, read.get(), &error));
+    std::vector<Move> booked;
+    CHECK(r, BookTurn(*read, read->map, pos, &booked) && booked == turn);
+    CHECK(r, read->scores[pos.hash] == 7);
+    std::remove(path.c_str());
 }

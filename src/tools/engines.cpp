@@ -1,5 +1,6 @@
 #include "tools/engines.hpp"
 
+#include <cstdio>
 #include <cstdlib>
 
 namespace shoal {
@@ -101,6 +102,8 @@ bool ParseEngine(const std::string& text, EngineSpec* spec) {
             spec->turns = std::atoi(value.c_str());
         } else if (key == "beam") {
             spec->beam = std::atoi(value.c_str());
+        } else if (key == "book") {
+            spec->book_path = value;
         } else if (key == "narrow") {
             spec->narrow = std::atoi(value.c_str());
         } else if (key == "leaf") {
@@ -131,10 +134,30 @@ void EngineInit(Engine* engine, const EngineSpec& spec, const Map& map, std::uin
         engine->planner->weights = spec.weights;
         engine->planner->leaf_mode = spec.leaf;
     }
+    if (!spec.book_path.empty()) {
+        engine->book = std::make_unique<Book>();
+        std::string error;
+        if (!LoadBook(spec.book_path, engine->book.get(), &error)) {
+            std::fprintf(stderr, "book %s: %s\n", spec.book_path.c_str(), error.c_str());
+            engine->book.reset();
+        }
+    }
 }
 
 std::vector<Move> PlayTurn(Engine* engine, const Map& map, const Position& pos, int* score) {
     *score = 0;
+    std::vector<Move> booked;
+    if (engine->book != nullptr && BookTurn(*engine->book, map, pos, &booked)) {
+        *score = engine->book->scores[pos.hash];
+        Position after = pos;
+        for (const Move& move : booked) {
+            ApplyMove(map, &after, move);
+        }
+        if (after.result == Result::Ongoing) {
+            booked.push_back(Move{});
+        }
+        return booked;
+    }
     switch (engine->spec.kind) {
     case EngineKind::Ply:
         return PlyTurn(engine, map, pos, score);

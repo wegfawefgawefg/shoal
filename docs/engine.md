@@ -65,3 +65,13 @@ every turn of the planner's own game.
 - `shoal match --a ENGINE --b ENGINE --gen SIZE COUNT`: both colours on each map, Elo.
 - `shoal genmap`: point-symmetric production maps for matches and tuning.
 - `shoal tune`: SPSA over the planner weights by self-play.
+
+## Books (`src/tools/book.cpp`)
+
+`shoal book MAP --turns N --time S --threads T --branch K --out book.sexp` searches every turn
+start of a fixed map long and deep (threaded planner), from the start position to N turns,
+following the best turn and the beam's next K-1 candidates. The file holds the map and one
+`(entry "hash" score "turn")` per position. An engine given `book=PATH` plays the book's turn
+when it knows the position and every move is still legal, else searches as usual. Book
+positions are keyed by the position hash, so a change to the hash scheme makes old books
+miss (they never play a wrong move: moves are checked for legality).

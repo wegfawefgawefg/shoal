@@ -3,6 +3,7 @@
 #include "game/position.hpp"
 #include "search/planner.hpp"
 #include "search/search.hpp"
+#include "tools/book.hpp"
 
 #include <memory>
 #include <string>
@@ -27,6 +28,7 @@ struct EngineSpec {
     int leaf = 1;
     int narrow = 4;
     PlanWeights weights;
+    std::string book_path; // a book from `shoal book`, played where it knows the position
     std::string text;
 };
 
@@ -36,6 +38,7 @@ struct Engine {
     EngineSpec spec;
     std::unique_ptr<Searcher> searcher;
     std::unique_ptr<Planner> planner;
+    std::unique_ptr<Book> book;
     std::uint64_t rng = 0x2545f4914f6cdd1dull;
 };
 

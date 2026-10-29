@@ -25,7 +25,8 @@ void PrintUsage() {
                 "  shoal tune [--rounds N] [--maps M] [--threads T] [--time S] [--rate R]\n"
                 "  shoal stats <games or dirs...>  builds, trades and results over games\n"
                 "  shoal dataset <games or dirs...> --out rows.csv  turn-start features\n"
-                "  shoal fuzz [--games N] [--seed S] [--threads T]  random games, board checks\n");
+                "  shoal fuzz [--games N] [--seed S] [--threads T]  random games, board checks\n"
+                "  shoal book <map> [--turns N] [--time S] [--threads T] [--branch K] --out f\n");
 }
 
 } // namespace
@@ -80,6 +81,9 @@ int main(int argc, char** argv) {
     }
     if (command == "fuzz") {
         return shoal::RunFuzz(argc - 2, argv + 2);
+    }
+    if (command == "book") {
+        return shoal::RunBook(argc - 2, argv + 2);
     }
     std::fprintf(stderr, "unknown command %s\n", command.c_str());
     PrintUsage();
