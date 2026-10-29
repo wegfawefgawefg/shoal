@@ -20,17 +20,9 @@ IMG = os.path.join(ROOT, "docs", "guide", "img")
 
 # name: (file, ply or None for the last, size, extra flags)
 SHOTS = {
-    "step-in": (f"{POS}/step-in.sexp", None, "1100x440", []),
-    "stay-out": (f"{POS}/stay-out.sexp", None, "1100x440", ["--play", "--select", "h2"]),
+    "woods": (f"{POS}/woods.sexp", None, "1100x440", []),
     "mountain": (f"{POS}/mountain.sexp", None, "1100x440", []),
-    "art-ring": (f"{POS}/art-ring.sexp", None, "1100x440", []),
-    "art-pinned": (f"{POS}/art-pinned.sexp", None, "1100x440", ["--play", "--select", "g2"]),
-    "rockets": (f"{POS}/rockets.sexp", None, "1100x440", []),
-    "snowball-1": (f"{POS}/snowball.sexp", 3, "1100x440", []),
-    "snowball-2": (f"{POS}/snowball.sexp", 5, "1100x440", []),
-    "snowball-3": (f"{POS}/snowball.sexp", None, "1100x440", []),
     "day-limit-loss": (f"{ROOT}/games/gen16-water-21-analysed.sexp", -70, "1300x840", []),
-    "solved-city5": (f"{ROOT}/games/solved/city5.sexp", 3, "1100x620", []),
 }
 
 

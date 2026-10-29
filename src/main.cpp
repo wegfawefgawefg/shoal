@@ -26,7 +26,8 @@ void PrintUsage() {
                 "  shoal stats <games or dirs...>  builds, trades and results over games\n"
                 "  shoal dataset <games or dirs...> --out rows.csv  turn-start features\n"
                 "  shoal fuzz [--games N] [--seed S] [--threads T]  random games, board checks\n"
-                "  shoal book <map> [--turns N] [--time S] [--threads T] [--branch K] --out f\n");
+                "  shoal book <map> [--turns N] [--time S] [--threads T] [--branch K] --out f\n"
+                "  shoal duel [stepper striker]  even fights by footing, played to the end\n");
 }
 
 } // namespace
@@ -84,6 +85,9 @@ int main(int argc, char** argv) {
     }
     if (command == "book") {
         return shoal::RunBook(argc - 2, argv + 2);
+    }
+    if (command == "duel") {
+        return shoal::RunDuelTables(argc - 2, argv + 2);
     }
     std::fprintf(stderr, "unknown command %s\n", command.c_str());
     PrintUsage();
