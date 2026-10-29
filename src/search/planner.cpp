@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <memory>
+#include <thread>
 
 namespace shoal {
 
@@ -206,6 +207,94 @@ std::vector<TurnPlan> BeamTurns(Planner* planner, const Position& pos, int width
     return out;
 }
 
+namespace {
+
+// score of one root turn at a depth, from the mover's view, with a full window
+int RootScore(Planner* planner, const Position& pos, const TurnPlan& plan, int turns, int width) {
+    Position next = AfterEnd(*planner->map, plan.end);
+    if (plan.end.result != Result::Ongoing || next.result != Result::Ongoing) {
+        Result r = plan.end.result != Result::Ongoing ? plan.end.result : next.result;
+        return ResultScore(r, pos.side);
+    }
+    return -TurnNegamax(planner, next, turns - 1, width, -kInfinity, kInfinity);
+}
+
+// each thread deepens its share of the root turns; the answer is the best root at the deepest
+// depth every root finished
+PlannerResult PlanTurnThreaded(Planner* planner, const Position& pos, const PlannerLimits& limits,
+                               std::chrono::steady_clock::time_point start) {
+    PlannerResult result;
+    std::vector<TurnPlan> roots = BeamTurns(planner, pos, limits.beam_width);
+    int root_count = static_cast<int>(roots.size());
+    int max_steps = (limits.max_turns + 1) / 2;
+    // scores[root][step], step k is depth 2k+1; kInfinity+1 marks unfinished
+    std::vector<std::vector<int>> scores(static_cast<std::size_t>(root_count),
+                                         std::vector<int>(static_cast<std::size_t>(max_steps),
+                                                          kInfinity + 1));
+    std::vector<std::uint64_t> plans(static_cast<std::size_t>(limits.threads), 0);
+    int width = limits.beam_width > 2 ? limits.beam_width - 2 : 2;
+    auto worker = [&](int thread) {
+        Planner local = *planner;
+        local.plans = 0;
+        local.stopped = false;
+        for (int step = 0; step < max_steps; step++) {
+            for (int i = thread; i < root_count; i += limits.threads) {
+                int score = RootScore(&local, pos, roots[static_cast<std::size_t>(i)],
+                                      2 * step + 1, width);
+                if (local.stopped) {
+                    plans[static_cast<std::size_t>(thread)] = local.plans;
+                    return;
+                }
+                scores[static_cast<std::size_t>(i)][static_cast<std::size_t>(step)] = score;
+            }
+        }
+        plans[static_cast<std::size_t>(thread)] = local.plans;
+    };
+    std::vector<std::thread> pool;
+    for (int t = 0; t < limits.threads; t++) {
+        pool.emplace_back(worker, t);
+    }
+    for (std::thread& thread : pool) {
+        thread.join();
+    }
+
+    result.turn = roots.front();
+    result.score = roots.front().score;
+    for (int step = 0; step < max_steps; step++) {
+        bool all = true;
+        for (int i = 0; i < root_count; i++) {
+            all = all && scores[static_cast<std::size_t>(i)][static_cast<std::size_t>(step)] <=
+                             kInfinity;
+        }
+        if (!all) {
+            break;
+        }
+        int best_index = 0;
+        for (int i = 1; i < root_count; i++) {
+            if (scores[static_cast<std::size_t>(i)][static_cast<std::size_t>(step)] >
+                scores[static_cast<std::size_t>(best_index)][static_cast<std::size_t>(step)]) {
+                best_index = i;
+            }
+        }
+        result.turn = roots[static_cast<std::size_t>(best_index)];
+        result.score = scores[static_cast<std::size_t>(best_index)][static_cast<std::size_t>(step)];
+        result.turns = 2 * step + 1;
+    }
+    for (std::uint64_t count : plans) {
+        result.plans += count;
+    }
+    result.seconds =
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+    if (!limits.quiet) {
+        std::printf("threads %d turns %d score %d plans %llu time %.2fs\n", limits.threads,
+                    result.turns, result.score, static_cast<unsigned long long>(result.plans),
+                    result.seconds);
+    }
+    return result;
+}
+
+} // namespace
+
 PlannerResult PlanTurn(Planner* planner, const Position& pos, const PlannerLimits& limits) {
     PlannerResult result;
     auto start = std::chrono::steady_clock::now();
@@ -213,6 +302,9 @@ PlannerResult PlanTurn(Planner* planner, const Position& pos, const PlannerLimit
     planner->stopped = false;
     planner->deadline = start + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
                                     std::chrono::duration<double>(limits.seconds));
+    if (limits.threads > 1) {
+        return PlanTurnThreaded(planner, pos, limits, start);
+    }
 
     std::vector<TurnPlan> roots = BeamTurns(planner, pos, limits.beam_width);
     result.turn = roots.front();

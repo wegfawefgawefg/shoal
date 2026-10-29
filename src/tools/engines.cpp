@@ -101,6 +101,8 @@ bool ParseEngine(const std::string& text, EngineSpec* spec) {
             spec->turns = std::atoi(value.c_str());
         } else if (key == "beam") {
             spec->beam = std::atoi(value.c_str());
+        } else if (key == "th") {
+            spec->threads = std::atoi(value.c_str());
         } else if (key.rfind("w.", 0) == 0) {
             if (!SetPlanWeight(&spec->weights, key.substr(2), std::atoi(value.c_str()))) {
                 return false;
@@ -146,6 +148,7 @@ std::vector<Move> PlayTurn(Engine* engine, const Map& map, const Position& pos, 
         limits.seconds = engine->spec.seconds;
         limits.max_turns = engine->spec.turns;
         limits.beam_width = engine->spec.beam;
+        limits.threads = engine->spec.threads;
         limits.quiet = true;
         PlannerResult result = PlanTurn(engine->planner.get(), pos, limits);
         turn = result.turn;

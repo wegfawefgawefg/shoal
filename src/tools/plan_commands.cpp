@@ -32,6 +32,8 @@ bool ParsePlanOptions(int argc, char** argv, int first, PlanOptions* options) {
             options->out_path = argv[++i];
         } else if (arg == "--days" && has_value) {
             options->max_days = std::atoi(argv[++i]);
+        } else if (arg == "--threads" && has_value) {
+            options->limits.threads = std::atoi(argv[++i]);
         } else if (arg == "--show") {
             options->show_turns = true;
         } else if (arg == "--quiet") {
