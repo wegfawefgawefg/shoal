@@ -82,3 +82,14 @@ fighter's pull toward an enemy by the damage it would deal (instead of by its ow
 Across planner self-play matches on generated 10x10 and 12x12 maps (one base each, both
 colours on every map), the first player won 97 decisive games to the second player's 41.
 The edge is large on small symmetric maps; real competitive maps compensate for it.
+
+## 200 self-play games on 12x12 (planner t=0.25, run 2 weights, 2026-10-29)
+
+- First player won 118, second 28, draws 54. On small symmetric maps the side that moves
+  first gets the first strike in nearly every fight and the first capture of every contested
+  city.
+- The armies became tank-heavy: 5318 tanks, 2021 infantry, 243 neotanks (late, trading 8.85
+  funds dealt per fund lost), hardly any artillery (5) or anti-air (9).
+- A logistic fit of the results on material per unit type (`scripts/fit_values.py`) is too
+  confounded to read as unit values yet: infantry material stands in for captures and the
+  early game, and rare units (artillery, APC) get noise. Needs more varied games.

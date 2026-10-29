@@ -91,14 +91,20 @@ int FighterPlacement(const PlanContext& ctx, const Position& pos, const Unit& un
         if (points == kFar) {
             continue;
         }
+        int turns = (points + spec.move - 1) / spec.move;
         if (spec.range_max > 1) {
-            // indirects want the enemy just inside their ring, not next to them
+            // indirects want the enemy inside their ring; outside it they must walk to the
+            // ring and then wait a turn, since they cannot move and fire
             int gap = Distance(map, unit.tile, enemy.tile);
             if (gap >= spec.range_min && gap <= spec.range_max) {
-                points = 0;
+                turns = 0;
+            } else if (gap < spec.range_min) {
+                turns = 1;
+            } else {
+                int walk = points - spec.range_max;
+                turns = 1 + (walk > 0 ? (walk + spec.move - 1) / spec.move : 0);
             }
         }
-        int turns = (points + spec.move - 1) / spec.move;
         int hit = damage * Spec(enemy.type).cost / 100;
         int value = Clamp0(ctx.weights.fight_turns - turns) * hit;
         if (value > best) {
