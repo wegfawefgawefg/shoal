@@ -144,6 +144,9 @@ void PushUnloads(const Map& map, const Position& pos, const Unit& transport, int
         map.tiles[dest] != Terrain::Port) {
         return;
     }
+    if (pos.unit_count >= kMaxUnits) {
+        return; // no room on the board for one more unit
+    }
     int around[4];
     int around_count = Neighbours(map, dest, around);
     for (int slot = 0; slot < transport.cargo_count; slot++) {
