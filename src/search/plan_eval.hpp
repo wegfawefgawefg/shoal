@@ -38,8 +38,9 @@ struct PlanWeights {
     int idle_funds = 9;         // percent of unspent funds subtracted where bases build
     int excess_funds = 38;      // further percent off the funds our bases can't spend next turn
     int spend_per_base = 16000; // what one base can spend in a turn, for that cap
-    int fuel_risk = 60;         // percent of an air or sea unit's cost lost when it can no
-                                // longer reach an own airport or port before it runs dry
+    int repair_share = 0; // percent of the hp a hurt unit will heal where it stands (50: -44 elo)
+    int fuel_risk = 60;   // percent of an air or sea unit's cost lost when it can no
+                          // longer reach an own airport or port before it runs dry
     EvalWeights eval;
 };
 

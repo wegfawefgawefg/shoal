@@ -222,6 +222,7 @@ const WeightName kWeightNames[] = {
     {"excess_funds", &PlanWeights::excess_funds},
     {"spend_per_base", &PlanWeights::spend_per_base},
     {"fuel_risk", &PlanWeights::fuel_risk},
+    {"repair_share", &PlanWeights::repair_share},
 };
 
 struct EvalWeightName {
@@ -365,6 +366,12 @@ int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit)
     int score = -Exposure(map, pos, ctx.threats, unit, unit.tile, ctx.weights.second_hit) *
                 ctx.weights.exposure / 100;
     int prop = map.property_at[unit.tile];
+    // a hurt unit on our own city, airport or port heals up to 2 hp next turn
+    if (prop != kNoProperty && unit.hp < 100 && pos.prop_owner[prop] == ctx.side &&
+        RepairsUnit(map.tiles[unit.tile], unit.type)) {
+        int heal = 100 - unit.hp < 20 ? 100 - unit.hp : 20;
+        score += Spec(unit.type).cost * heal / 100 * ctx.weights.repair_share / 100;
+    }
     bool capturing = prop != kNoProperty && pos.capture[prop] != kCapturePoints;
     int type = static_cast<int>(unit.type);
     if (Spec(unit.type).can_capture && !capturing) {

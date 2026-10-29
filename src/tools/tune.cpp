@@ -59,6 +59,7 @@ const TuneParam kParams[] = {
     {"value_lander", 6, 40, 250},
     {"value_sub", 6, 40, 250},
     {"fuel_risk", 8, 0, 200},
+    {"repair_share", 10, 0, 300},
 };
 constexpr int kParamCount = sizeof(kParams) / sizeof(kParams[0]);
 
