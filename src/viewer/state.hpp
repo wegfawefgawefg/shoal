@@ -6,6 +6,8 @@
 #include "text.hpp"
 
 #include <SDL3/SDL.h>
+#include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -18,10 +20,12 @@ struct Layout {
     float ui = 1;   // text and padding scale, 1 at about 800 pixels tall
     Rect board;     // the tiles
     float tile = 0; // tile size
-    Rect eval_bar;  // zero size when the game has no evals
+    Rect eval_bar;  // left of the board
     Rect panel;     // the side panel
     Rect header;    // day, players, funds
     Rect report;    // the line about the last move
+    Rect engine;    // the engine's verdict and best turn for the shown position
+    Rect graph;     // the eval graph; zero size when there is nothing to plot
     Rect move_list; // the scrolling move list
     Rect footer;    // key hints
 };
@@ -66,6 +70,28 @@ struct PlayState {
     int hover_item = -1;
 };
 
+// a planner search running on its own thread (live_analysis.cpp)
+struct LiveJob;
+
+// the result of the last live analysis (key A); shown only on the position it was made for
+struct LiveResult {
+    bool valid = false;
+    int ply = 0;
+    std::uint64_t hash = 0;
+    int side = 0;  // side to move there
+    int score = 0; // from that side's view
+    std::vector<Move> best;
+    int turns = 0;
+    double seconds = 0;
+};
+
+struct LiveAnalysis {
+    std::vector<std::shared_ptr<LiveJob>> jobs; // running or waiting to be joined
+    int latest_id = 0;                          // only this job's result is kept
+    LiveResult result;
+    double seconds = 1.5; // per press: two searches of half this
+};
+
 struct State {
     // the game
     std::string path;
@@ -78,6 +104,8 @@ struct State {
     Mode mode = Mode::Replay;
     PlayState play;
     int edited_from = -1; // first ply entered by hand, -1 when the line is the file's
+    LiveAnalysis live;
+    bool show_best = true; // the engine's best turn as arrows on the board (B)
 
     // window
     SDL_Window* window = nullptr;

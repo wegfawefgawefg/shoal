@@ -26,10 +26,30 @@ cmake --preset release && cmake --build --preset release
 ```
 
 Left/right step one move, up/down one turn, home/end jump to the ends; click a move in the
-list to go there. The bar left of the board is the eval from `(evals ...)`, from player 0's
-view. `P` switches to play mode: click a unit, a destination, then an action; the moves after
-the current one are replaced, `R` reloads the file. `--screenshot` draws one frame with a
-software renderer and no window (`--events right,up,click:X:Y,...` scripts input first).
+list or a point on the eval graph to go there. The bar left of the board and the graph are
+player 0's view: from the file's `(analysis ...)` when it has one, else its `(evals ...)`.
+Turns the engine disliked carry `?!` (inaccuracy), `?` (mistake) or `??` (blunder) in the move
+list and on the graph; at a turn start the engine's best turn is drawn as numbered arrows (`B`
+hides them) and written in the panel.
+
+`A` runs the planner on the shown position on a background thread (1.5 s) and shows its score
+and best line; it is what makes play mode useful. `P` switches to play mode: click a unit, a
+destination, then an action; the moves after the current one are replaced, `R` reloads the
+file. `--screenshot` draws one frame with a software renderer and no window
+(`--events right,up,click:X:Y,a,...` scripts input first; a live analysis is waited for).
+
+## Analysis
+
+```
+./build/shoal analyse games/crossing-greedy.sexp --time 1 --threads 8 --out annotated.sexp
+./build/shoal_viewer games/crossing-greedy-analysed.sexp
+```
+
+Every turn start is searched (two planner searches of `--time` seconds each, see
+`docs/engine.md`); the table shows the score, what each played turn lost against the engine's
+best, and the engine's turn next to the one played.
+
+![analysis](docs/screenshots/analysis-marks.png)
 
 The art is drawn from shapes in code; the font is Barlow Semi Condensed (OFL, `data/fonts`).
 

@@ -20,18 +20,20 @@ Scope: AW2 tier rules (AWBW), no luck, no COs, production yes, fog later.
 - Turn planner: beats the ply search and greedy; deeper is better (findings).
 - Map generator, match harness, SPSA tuner.
 - Viewer: replay with eval bar, last-move marks, move list; minimal play mode (`P`).
+- Analysis: `shoal analyse` scores every turn start and marks inaccuracies, mistakes and
+  blunders into the game file; the viewer draws the eval graph, the marks, the engine's best
+  turn as arrows, and runs the planner live on any position (`A`).
 
 ## Queue
 
-1. Viewer: engine analysis on demand (eval and best line for the shown position), blunder
-   marks and an eval graph, keep hand-played lines as a variation, save them.
+1. Viewer: keep hand-played lines as a variation next to the game, save them.
 2. Tune planner weights (SPSA run on stevejobs), then re-check against the defaults.
 3. Planner on 16x16 with big armies: profile, cut costs (threat map updates, wider delta
    scoring), measure depth reached.
 4. Tactics inside a turn: small exact search over attack orders (who hits first) for the
    units that can reach the same targets.
 5. Solver speed: partial-order reduction of independent unit actions; bigger table.
-6. Viewer play mode; engine analysis in the viewer (eval bar live, best line, blunders).
+6. Viewer play mode: let the engine answer a hand-played turn.
 7. APC load/unload and supply, join, then air and sea.
 8. Learned eval: train a small net on planner/self-play positions (stevejobs).
 9. Fog.

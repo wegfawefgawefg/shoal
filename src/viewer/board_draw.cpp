@@ -177,11 +177,13 @@ void DrawBoard(State* state) {
     DrawCaptureBars(canvas, pos);
     DrawPlayUnder(canvas, *state);
     DrawMovePath(canvas, state->report);
+    DrawBestTurnUnder(canvas, *state);
     DrawUnits(canvas, pos);
     if (state->ply > 0) {
         const Position& before = state->positions[static_cast<std::size_t>(state->ply - 1)];
         DrawMoveMarks(canvas, state->report, before);
     }
+    DrawBestTurnOver(canvas, *state);
     DrawPlayOver(canvas, *state);
     SDL_SetRenderTarget(state->renderer, nullptr);
 

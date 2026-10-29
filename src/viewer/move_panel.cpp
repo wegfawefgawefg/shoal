@@ -1,3 +1,4 @@
+#include "analysis_view.hpp"
 #include "layout.hpp"
 #include "palette.hpp"
 #include "replay.hpp"
@@ -66,14 +67,29 @@ void FollowPly(State* state) {
     }
 }
 
-void DrawHeading(State* state, const MoveRow& row, Rect rect, bool current_turn) {
+// "Day 3  Ember  ??" with the engine's score at the turn's start on the right
+void DrawHeading(State* state, const MoveRow& row, int turn_ply, Rect rect, bool current_turn) {
     float size = Ui(*state, 13);
     float y = rect.y + rect.h - LineHeight(size) - Ui(*state, 3);
     FillRect(state->renderer, Rect{rect.x, rect.y + Ui(*state, 4), rect.w, 1}, kPanelLine);
     FillCircle(state->renderer, Vec2{rect.x + Ui(*state, 6), y + LineHeight(size) * 0.5f},
                Ui(*state, 4), kPlayer[row.side]);
     std::string text = "Day " + std::to_string(row.day) + "  " + kPlayerName[row.side];
-    DrawText(&state->font, rect.x + Ui(*state, 16), y, size, current_turn ? kText : kTextDim, text);
+    float x = rect.x + Ui(*state, 16);
+    x += DrawText(&state->font, x, y, size, current_turn ? kText : kTextDim, text);
+    const TurnAnalysis* turn = AnalysisAt(*state, turn_ply);
+    if (turn == nullptr) {
+        return;
+    }
+    if (turn->mark != TurnMark::None) {
+        float mark_size = Ui(*state, 15);
+        DrawText(&state->font, x + Ui(*state, 8), y - (LineHeight(mark_size) - LineHeight(size)),
+                 mark_size, MarkColor(turn->mark), TurnMarkSymbol(turn->mark));
+    }
+    int eval = AnalysisForPlayer0(*state, *turn);
+    Color color = eval > 0 ? kPlayer[0] : eval < 0 ? kPlayer[1] : kTextDim;
+    DrawTextAligned(&state->font, rect.x + rect.w - Ui(*state, 8), y, size, color, FormatEval(eval),
+                    Align::Right);
 }
 
 void DrawMoveRow(State* state, int index, const MoveRow& row, Rect rect, bool current) {
@@ -95,8 +111,9 @@ void DrawMoveRow(State* state, int index, const MoveRow& row, Rect rect, bool cu
                     number, Align::Right);
     Color text_color = move.kind == MoveKind::EndTurn ? kTextDim : kText;
     DrawText(&state->font, rect.x + Ui(*state, 52), y, size, text_color, MoveText(map, move));
+    // with analysis the turn headings carry the scores; per-move evals would only repeat them
     int eval = 0;
-    if (EvalForPlayer0(*state, row.move_index + 1, &eval)) {
+    if (!HasAnalysis(*state) && EvalForPlayer0(*state, row.move_index + 1, &eval)) {
         Color color = eval > 0 ? kPlayer[0] : eval < 0 ? kPlayer[1] : kTextDim;
         DrawTextAligned(&state->font, rect.x + rect.w - Ui(*state, 8), y, size, color,
                         FormatEval(eval), Align::Right);
@@ -165,9 +182,9 @@ void DrawMoveList(State* state) {
         if (y + h >= list.y && y <= list.y + list.h) {
             Rect rect{list.x, y, list.w, h};
             if (row.heading) {
-                bool current_turn =
-                    state->rows[static_cast<std::size_t>(i + 1)].move_index == turn_start;
-                DrawHeading(state, row, rect, current_turn && state->ply > 0);
+                int turn_ply = state->rows[static_cast<std::size_t>(i + 1)].move_index;
+                bool current_turn = turn_ply == turn_start;
+                DrawHeading(state, row, turn_ply, rect, current_turn && state->ply > 0);
             } else {
                 DrawMoveRow(state, i, row, rect, i == current);
             }

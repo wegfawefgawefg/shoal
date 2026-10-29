@@ -18,6 +18,7 @@ int RunSearch(int argc, char** argv);
 int RunSelfPlay(int argc, char** argv);
 int RunPlan(int argc, char** argv);
 int RunPlanPlay(int argc, char** argv);
+int RunAnalyse(int argc, char** argv);
 int RunMatch(int argc, char** argv);
 int RunGenMap(int argc, char** argv);
 int RunTune(int argc, char** argv);
