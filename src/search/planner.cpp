@@ -51,6 +51,12 @@ bool ScoreQuietMove(const PlanContext& ctx, const TurnPlan& plan, const Move& mo
     return true;
 }
 
+// the beam one turn deeper
+int Narrower(const Planner& planner, int width) {
+    int narrower = width - planner.narrow;
+    return narrower > 2 ? narrower : 2;
+}
+
 // the turn's end applied: what the next side starts from
 Position AfterEnd(const Map& map, const Position& end) {
     Position next = end;
@@ -98,7 +104,7 @@ int TurnNegamax(Planner* planner, const Position& pos, int turns, int width, int
             if (next.result != Result::Ongoing) {
                 score = ResultScore(next.result, pos.side);
             } else {
-                int narrower = width > 2 ? width - 2 : 2;
+                int narrower = Narrower(*planner, width);
                 score = -TurnNegamax(planner, next, turns - 1, narrower, -beta, -alpha);
             }
         }
@@ -242,7 +248,7 @@ PlannerResult PlanTurnThreaded(Planner* planner, const Position& pos, const Plan
                                          std::vector<int>(static_cast<std::size_t>(max_steps),
                                                           kInfinity + 1));
     std::vector<std::uint64_t> plans(static_cast<std::size_t>(limits.threads), 0);
-    int width = limits.beam_width > 2 ? limits.beam_width - 2 : 2;
+    int width = Narrower(*planner, limits.beam_width);
     auto worker = [&](int thread) {
         Planner local = *planner;
         local.leaf_context = std::make_shared<PlanContext>(); // never shared between threads
@@ -311,6 +317,7 @@ PlannerResult PlanTurn(Planner* planner, const Position& pos, const PlannerLimit
     auto start = std::chrono::steady_clock::now();
     planner->plans = 0;
     planner->stopped = false;
+    planner->narrow = limits.narrow;
     planner->deadline = start + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
                                     std::chrono::duration<double>(limits.seconds));
     if (limits.threads > 1) {
@@ -332,7 +339,7 @@ PlannerResult PlanTurn(Planner* planner, const Position& pos, const PlannerLimit
                 Result r = plan.end.result != Result::Ongoing ? plan.end.result : next.result;
                 score = ResultScore(r, pos.side);
             } else {
-                int width = limits.beam_width > 2 ? limits.beam_width - 2 : 2;
+                int width = Narrower(*planner, limits.beam_width);
                 score = -TurnNegamax(planner, next, turns - 1, width, -kInfinity, -best);
             }
             if (planner->stopped) {

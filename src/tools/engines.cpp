@@ -101,6 +101,8 @@ bool ParseEngine(const std::string& text, EngineSpec* spec) {
             spec->turns = std::atoi(value.c_str());
         } else if (key == "beam") {
             spec->beam = std::atoi(value.c_str());
+        } else if (key == "narrow") {
+            spec->narrow = std::atoi(value.c_str());
         } else if (key == "leaf") {
             spec->leaf = std::atoi(value.c_str());
         } else if (key == "th") {
@@ -152,6 +154,7 @@ std::vector<Move> PlayTurn(Engine* engine, const Map& map, const Position& pos, 
         limits.max_turns = engine->spec.turns;
         limits.beam_width = engine->spec.beam;
         limits.threads = engine->spec.threads;
+        limits.narrow = engine->spec.narrow;
         limits.quiet = true;
         PlannerResult result = PlanTurn(engine->planner.get(), pos, limits);
         turn = result.turn;

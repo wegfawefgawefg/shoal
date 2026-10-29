@@ -21,6 +21,7 @@ struct PlannerLimits {
     double seconds = 1.0;
     int max_turns = 16; // turn depth: 1 = our turn then their greedy reply
     int beam_width = 12; // candidate turns per side at each node (12 beat 8 by ~100 elo)
+    int narrow = 4;     // the beam loses this many candidates per turn deeper (4 beat 2)
     int threads = 1;    // more than one splits the root turns over threads
     bool quiet = false;
 };
@@ -38,6 +39,7 @@ struct Planner {
     DistanceTable distances;
     PlanWeights weights;
     int leaf_mode = 1; // 0 static, 1 greedy turn, 2 halfway
+    int narrow = 4;    // copied from the limits of the running search
     std::shared_ptr<PlanContext> leaf_context = std::make_shared<PlanContext>();
     std::uint64_t plans = 0;
     std::chrono::steady_clock::time_point deadline;

@@ -42,6 +42,9 @@ in the tiny range; bigger questions go to the planner.
 | run 2 + damage-weighted placement | run 1 weights, same code | 32 | +25 =5 -2 | +314 |
 | beam 12 (t=0.3) | beam 8 | 24 | +11 =9 -4 | +104 |
 | beam 16 (t=0.3) | beam 12 | 24 | +11 =5 -8 | +44 (noise) |
+| beam narrows 4 per turn deeper | narrows 2 | 24 | +14 =2 -8 | +89 |
+| no narrowing | narrows 2 | 24 | +9 =1 -14 | -73 |
+| narrows 6 | narrows 4 | 24 | +9 =5 -10 | -14 (noise) |
 
 In planner self-play the first player won 18 of 28 decisive games on 12x12: a first-turn
 edge shows up on small production maps too.

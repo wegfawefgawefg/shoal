@@ -25,6 +25,7 @@ struct EngineSpec {
     int beam = 12;
     int threads = 1;
     int leaf = 1;
+    int narrow = 4;
     PlanWeights weights;
     std::string text;
 };
