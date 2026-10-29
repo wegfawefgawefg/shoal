@@ -20,3 +20,4 @@ struct TestResults {
 void RunRulesTests(TestResults& results);
 void RunFileTests(TestResults& results);
 void RunFuzzTests(TestResults& results);
+void RunPlannerTests(TestResults& results);
