@@ -15,6 +15,8 @@ struct SearchLimits {
     double seconds = 0;       // 0 means no time limit
     std::uint64_t nodes = 0;  // 0 means no node limit
     bool solve = false;       // search to the end of the game; scores are -1, 0, 1
+    bool distance = false;    // with solve: wins and losses score by plies to the end, so the
+                              // line is the fastest win against the longest defence
     bool quiet = false;       // no per-depth printing
 };
 
@@ -45,6 +47,7 @@ struct Searcher {
     bool timed = false;
     bool stopped = false;
     bool solve = false;
+    bool distance = false;
 };
 
 void SearcherInit(Searcher* searcher, const Map& map, int table_log2);

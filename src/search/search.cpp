@@ -53,7 +53,7 @@ bool OutOfBudget(Searcher* s) {
 
 int Terminal(const Searcher& s, const Position& pos, int ply) {
     int score = ResultScore(pos.result, pos.side);
-    if (s.solve) {
+    if (s.solve && !s.distance) {
         return score > 0 ? 1 : (score < 0 ? -1 : 0);
     }
     if (score > 0) {
@@ -242,6 +242,7 @@ SearchResult Search(Searcher* s, const Position& root, const SearchLimits& limit
     s->nodes = 0;
     s->stopped = false;
     s->solve = limits.solve;
+    s->distance = limits.solve && limits.distance;
     s->node_limit = limits.nodes;
     s->timed = limits.seconds > 0;
     s->deadline = start + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
@@ -251,7 +252,7 @@ SearchResult Search(Searcher* s, const Position& root, const SearchLimits& limit
     int first_depth = limits.solve ? kSolveDepth : 1;
     int last_depth = limits.solve ? kSolveDepth : limits.max_depth;
     for (int depth = first_depth; depth <= last_depth; depth++) {
-        int window = limits.solve ? 1 : kInfinity;
+        int window = limits.solve && !limits.distance ? 1 : kInfinity;
         int score = Negamax(s, root, depth, -window, window, 0);
         double seconds =
             std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();

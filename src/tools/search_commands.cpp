@@ -27,6 +27,8 @@ bool ParseOptions(int argc, char** argv, int first, SearchOptions* options) {
         bool has_value = i + 1 < argc;
         if (arg == "--solve") {
             options->limits.solve = true;
+        } else if (arg == "--distance") {
+            options->limits.distance = true;
         } else if (arg == "--quiet") {
             options->limits.quiet = true;
         } else if (arg == "--depth" && has_value) {
