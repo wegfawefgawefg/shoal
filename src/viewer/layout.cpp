@@ -36,7 +36,7 @@ void ComputeLayout(State* state, float width, float height) {
     l.panel = Rect{width - panel_w, 0, panel_w, height};
     float pad = Ui(*state, 16);
     float header_h = Ui(*state, 168);
-    float report_h = Ui(*state, 64);
+    float report_h = Ui(*state, 80);
     float engine_h = Ui(*state, 92);
     float graph_h = HasAnalysis(*state) || HasEvals(*state) ? Ui(*state, 80) : 0;
     float footer_h = Ui(*state, 44);

@@ -48,6 +48,15 @@ const TuneParam kParams[] = {
     {"value_neo", 6, 40, 250},
     {"value_rkt", 6, 40, 250},
     {"value_apc", 6, 40, 250},
+    {"value_fighter", 6, 40, 250},
+    {"value_bomber", 6, 40, 250},
+    {"value_bcopter", 6, 40, 250},
+    {"value_tcopter", 6, 40, 250},
+    {"value_bship", 6, 40, 250},
+    {"value_cruiser", 6, 40, 250},
+    {"value_lander", 6, 40, 250},
+    {"value_sub", 6, 40, 250},
+    {"fuel_risk", 8, 0, 200},
 };
 constexpr int kParamCount = sizeof(kParams) / sizeof(kParams[0]);
 
@@ -153,6 +162,8 @@ int RunTune(int argc, char** argv) {
             gen.width = gen.height = 9 + static_cast<int>(NextRandom(&rng) % 10);
             gen.bases_per_side = 1 + static_cast<int>(NextRandom(&rng) % 3);
             gen.day_limit = 15 + gen.width / 2;
+            // half the maps have a lake, so air and sea units get tuned too
+            gen.water = (NextRandom(&rng) & 1) != 0 && gen.width >= 12;
             gen.seed = NextRandom(&rng);
             GenerateMap(gen, map.get());
             maps.push_back(std::move(map));

@@ -7,6 +7,13 @@ A shoal is a school of fish, and a beach tile in AW.
 
 Rules: Advance Wars 2 / AWBW standard, no luck, no COs, no fog (for now). See `docs/rules.md`.
 
+Units: infantry, mech, recon, tank, md tank, neotank, artillery, rockets, anti-air, missiles
+and APC; fighter, bomber, b-copter and t-copter; battleship, cruiser, lander and sub. Fuel,
+transports, joining, capture, repair at cities, airports and ports, production at bases,
+airports and ports. `shoal genmap --water` makes maps with a lake, ports and airports.
+
+![units](docs/screenshots/units.png)
+
 ## Build
 
 ```
@@ -60,6 +67,7 @@ The art is drawn from shapes in code; the font is Barlow Semi Condensed (OFL, `d
 
 Maps and games are S-expressions (`maps/`, see `docs/formats.md`). Moves are written like
 `"b2 c2"` (move and wait), `"b2 c2 x c3"` (move and attack c3), `"b1 b1 cap"`,
-`"a1 b1 join"`, `"e5 build inf"` and `"end"`. Tiles are named like chess squares, `a1` top left.
+`"a1 b1 join"`, `"a1 b1 load"`, `"b1 c1 drop c2"`, `"a1 b1 dive"`, `"a1 b1 surface"`,
+`"e5 build inf"` and `"end"`. Tiles are named like chess squares, `a1` top left.
 
 Not affiliated with Nintendo or Intelligent Systems. No game assets are included.

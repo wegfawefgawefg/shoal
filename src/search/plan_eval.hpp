@@ -38,6 +38,8 @@ struct PlanWeights {
     int idle_funds = 9;         // percent of unspent funds subtracted where bases build
     int excess_funds = 50;      // further percent off the funds our bases can't spend next turn
     int spend_per_base = 16000; // what one base can spend in a turn, for that cap
+    int fuel_risk = 60;         // percent of an air or sea unit's cost lost when it can no
+                                // longer reach an own airport or port before it runs dry
     EvalWeights eval;
 };
 
@@ -57,6 +59,10 @@ struct PlanContext {
     // threat map they describe the board as the turn began
     mutable std::int32_t capture_cache[kUnitTypeCount][kMaxTiles];
     mutable std::int32_t fight_cache[kUnitTypeCount][kMaxTiles];
+    // capture value of a foot soldier riding an air or sea transport, by transport type
+    mutable std::int32_t ride_cache[kUnitTypeCount][kMaxTiles];
+    mutable bool cache_ready[kUnitTypeCount] = {}; // a type's rows are cleared on first use
+    bool blocks_build[kTerrainCount] = {}; // a unit standing here blocks a build
 };
 
 void PlanBegin(PlanContext* ctx, const Map& map, const DistanceTable& distances,
@@ -67,5 +73,9 @@ void PlanBegin(PlanContext* ctx, const Map& map, const DistanceTable& distances,
 int PlanScore(const PlanContext& ctx, const Position& pos);
 // the part of PlanScore one of ctx->side's units adds, as if it stood on unit.tile
 int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit);
+
+// a move that only changes the moving unit (a wait, dive or surface that leaves no capture
+// half done): the unit as it ends up, so its terms can be scored as a delta
+bool QuietMoved(const Map& map, const Position& pos, const Move& move, Unit* moved);
 
 } // namespace shoal

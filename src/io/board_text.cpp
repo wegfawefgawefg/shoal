@@ -4,7 +4,9 @@ namespace shoal {
 
 char UnitLetter(UnitType type) {
     // one letter per unit, picked to stay distinct from terrain glyphs when upper case
-    const char letters[kUnitTypeCount] = {'I', 'M', 'R', 'T', 'D', 'N', 'A', 'K', 'F', 'S', 'P'};
+    // jet, bomber, heli, y for the t-copter's rotors, gunship, cruiser, lander, u-boat
+    const char letters[kUnitTypeCount] = {'I', 'M', 'R', 'T', 'D', 'N', 'A', 'K', 'F', 'S',
+                                          'P', 'J', 'B', 'H', 'Y', 'G', 'C', 'L', 'U'};
     return letters[static_cast<int>(type)];
 }
 

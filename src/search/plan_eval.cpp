@@ -68,6 +68,94 @@ int CapturerPlacement(const PlanContext& ctx, const Position& pos, const Unit& u
     return Clamp0(ctx.weights.capture_reach - best_turns * ctx.weights.capture_per_turn);
 }
 
+// points to stand next to `target`: through the target's tile when the mover can enter it,
+// else from the best neighbour (a ship hitting the shore, a tank hitting a ship)
+int ApproachPoints(const PlanContext& ctx, MoveType move_type, int from, int target) {
+    int points = TerrainDistance(*ctx.distances, move_type, from, target);
+    if (points != kFar) {
+        return points;
+    }
+    int around[4];
+    int count = Neighbours(*ctx.map, target, around);
+    for (int n = 0; n < count; n++) {
+        int near = TerrainDistance(*ctx.distances, move_type, from, around[n]);
+        if (near != kFar && near + 1 < points) {
+            points = near + 1;
+        }
+    }
+    return points;
+}
+
+// a foot soldier riding an air or sea transport: turns for the transport to carry it next to
+// a property we lack and for it to walk on. A lander goes by way of a shoal or port
+int RiderCapture(const PlanContext& ctx, const Position& pos, const Unit& transport) {
+    const Map& map = *ctx.map;
+    const UnitSpec& carrier = Spec(transport.type);
+    const UnitSpec& foot = Spec(UnitType::Infantry);
+    int tile_count = map.width * map.height;
+    int best_turns = 99;
+    for (int prop = 0; prop < map.property_count; prop++) {
+        if (pos.prop_owner[prop] == ctx.side) {
+            continue;
+        }
+        int tile = map.property_tiles[prop];
+        if (transport.type != UnitType::Lander) {
+            int points = ApproachPoints(ctx, carrier.move_type, transport.tile, tile);
+            if (points != kFar) {
+                int turns = (points + carrier.move - 1) / carrier.move;
+                best_turns = turns < best_turns ? turns : best_turns;
+            }
+            continue;
+        }
+        for (int land = 0; land < tile_count; land++) {
+            if (map.tiles[land] != Terrain::Shoal && map.tiles[land] != Terrain::Port) {
+                continue;
+            }
+            int sail = TerrainDistance(*ctx.distances, carrier.move_type, transport.tile, land);
+            int walk = TerrainDistance(*ctx.distances, foot.move_type, land, tile);
+            if (sail == kFar || walk == kFar) {
+                continue;
+            }
+            int turns =
+                (sail + carrier.move - 1) / carrier.move + (walk + foot.move - 1) / foot.move;
+            best_turns = turns < best_turns ? turns : best_turns;
+        }
+    }
+    return Clamp0(ctx.weights.capture_reach - best_turns * ctx.weights.capture_per_turn);
+}
+
+// air and sea units that cannot get back to an own airport or port with fuel to spare lose
+// a share of their worth: all of fuel_risk once they would run dry on the way
+int FuelRisk(const PlanContext& ctx, const Position& pos, const Unit& unit) {
+    const Map& map = *ctx.map;
+    const UnitSpec& spec = Spec(unit.type);
+    int burn = unit.dived ? kSubDivedFuelPerDay : spec.fuel_per_day;
+    if (burn == 0) {
+        return 0;
+    }
+    int need = kFar;
+    for (int prop = 0; prop < map.property_count; prop++) {
+        int tile = map.property_tiles[prop];
+        if (pos.prop_owner[prop] != ctx.side || !RepairsUnit(map.tiles[tile], unit.type)) {
+            continue;
+        }
+        int points = TerrainDistance(*ctx.distances, spec.move_type, unit.tile, tile);
+        need = points < need ? points : need;
+    }
+    int margin = unit.fuel;
+    if (need != kFar) {
+        int turns = (need + spec.move - 1) / spec.move;
+        margin -= need + burn * turns;
+    }
+    constexpr int kSpareDays = 3;
+    int spare_days = margin < 0 ? -1 : margin / burn;
+    if (spare_days >= kSpareDays) {
+        return 0;
+    }
+    int short_days = kSpareDays - (spare_days < 0 ? 0 : spare_days);
+    return spec.cost * ctx.weights.fuel_risk / 100 * short_days / kSpareDays;
+}
+
 // fighters want enemies within reach that they hurt; each enemy is worth the funds a full
 // strength hit on it would take, more the fewer turns away it is
 int FighterPlacement(const PlanContext& ctx, const Position& pos, const Unit& unit) {
@@ -87,7 +175,10 @@ int FighterPlacement(const PlanContext& ctx, const Position& pos, const Unit& un
         if (damage == 0) {
             continue;
         }
-        int points = TerrainDistance(*ctx.distances, spec.move_type, unit.tile, enemy.tile);
+        if (enemy.dived && !HitsDived(unit.type)) {
+            continue;
+        }
+        int points = ApproachPoints(ctx, spec.move_type, unit.tile, enemy.tile);
         if (points == kFar) {
             continue;
         }
@@ -130,6 +221,7 @@ const WeightName kWeightNames[] = {
     {"idle_funds", &PlanWeights::idle_funds},
     {"excess_funds", &PlanWeights::excess_funds},
     {"spend_per_base", &PlanWeights::spend_per_base},
+    {"fuel_risk", &PlanWeights::fuel_risk},
 };
 
 struct EvalWeightName {
@@ -227,17 +319,41 @@ void PlanBegin(PlanContext* ctx, const Map& map, const DistanceTable& distances,
     ctx->distances = &distances;
     ctx->side = pos.side;
     BuildThreats(map, pos, pos.side ^ 1, &ctx->threats);
-    int tile_count = map.width * map.height;
     for (int type = 0; type < kUnitTypeCount; type++) {
-        for (int tile = 0; tile < tile_count; tile++) {
-            ctx->capture_cache[type][tile] = kUnfilled;
-            ctx->fight_cache[type][tile] = kUnfilled;
+        ctx->cache_ready[type] = false;
+    }
+    for (int t = 0; t < kTerrainCount; t++) {
+        ctx->blocks_build[t] = false;
+        for (int type = 0; type < kUnitTypeCount && map.production; type++) {
+            if (map.buildable[type] &&
+                BuildsUnit(static_cast<Terrain>(t), static_cast<UnitType>(type))) {
+                ctx->blocks_build[t] = true;
+            }
         }
     }
 }
 
+namespace {
+
+// clears a type's placement caches the first time this turn the type is scored
+void PrepareType(const PlanContext& ctx, int type) {
+    if (ctx.cache_ready[type]) {
+        return;
+    }
+    ctx.cache_ready[type] = true;
+    int tile_count = ctx.map->width * ctx.map->height;
+    for (int tile = 0; tile < tile_count; tile++) {
+        ctx.capture_cache[type][tile] = kUnfilled;
+        ctx.fight_cache[type][tile] = kUnfilled;
+        ctx.ride_cache[type][tile] = kUnfilled;
+    }
+}
+
+} // namespace
+
 int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit) {
     const Map& map = *ctx.map;
+    PrepareType(ctx, static_cast<int>(unit.type));
     int score = -Exposure(map, pos, ctx.threats, unit, unit.tile, ctx.weights.second_hit) *
                 ctx.weights.exposure / 100;
     int prop = map.property_at[unit.tile];
@@ -255,7 +371,11 @@ int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit)
         fight = FighterPlacement(ctx, pos, unit);
     }
     score += fight;
-    // cargo is placed where its transport stands
+    if (Spec(unit.type).fuel_per_day > 0) {
+        score -= FuelRisk(ctx, pos, unit);
+    }
+    // cargo is placed where its transport stands; air and sea transports carry it on
+    bool carried = unit.cargo_count > 0 && DomainOf(unit.type) != Domain::Ground;
     for (int c = 0; c < unit.cargo_count; c++) {
         Unit rider;
         rider.type = unit.cargo[c].type;
@@ -263,7 +383,14 @@ int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit)
         rider.hp = unit.cargo[c].hp;
         rider.tile = unit.tile;
         int rider_type = static_cast<int>(rider.type);
-        if (Spec(rider.type).can_capture) {
+        PrepareType(ctx, rider_type);
+        if (Spec(rider.type).can_capture && carried) {
+            std::int32_t& ride = ctx.ride_cache[type][unit.tile];
+            if (ride == kUnfilled) {
+                ride = RiderCapture(ctx, pos, unit);
+            }
+            score += ride;
+        } else if (Spec(rider.type).can_capture) {
             std::int32_t& capture = ctx.capture_cache[rider_type][unit.tile];
             if (capture == kUnfilled) {
                 capture = CapturerPlacement(ctx, pos, rider);
@@ -271,10 +398,31 @@ int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit)
             score += capture;
         }
     }
-    if (map.production && map.tiles[unit.tile] == Terrain::Base) {
-        score -= ctx.weights.base_block; // standing on our base blocks next turn's build
+    if (ctx.blocks_build[static_cast<int>(map.tiles[unit.tile])]) {
+        score -= ctx.weights.base_block; // standing on a factory blocks next turn's build
     }
     return score;
+}
+
+bool QuietMoved(const Map& map, const Position& pos, const Move& move, Unit* moved) {
+    if (move.kind != MoveKind::Wait && move.kind != MoveKind::Dive &&
+        move.kind != MoveKind::Surface) {
+        return false;
+    }
+    int from_prop = map.property_at[move.from];
+    if (from_prop != kNoProperty && pos.capture[from_prop] != kCapturePoints &&
+        move.to != move.from) {
+        return false;
+    }
+    *moved = pos.units[pos.unit_at[move.from]];
+    int points = MovePoints(map, pos, move);
+    moved->fuel = static_cast<std::uint8_t>(moved->fuel > points ? moved->fuel - points : 0);
+    moved->tile = move.to;
+    moved->done = 1;
+    if (move.kind != MoveKind::Wait) {
+        moved->dived = move.kind == MoveKind::Dive ? 1 : 0;
+    }
+    return true;
 }
 
 int PlanScore(const PlanContext& ctx, const Position& pos) {

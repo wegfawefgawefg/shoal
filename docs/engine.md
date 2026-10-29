@@ -27,10 +27,18 @@ Searches whole turns.
 - `PlanScore`: material + properties + funds (`Evaluate`), minus each of our units'
   expected loss to next turn's enemy fire (threat map of what every enemy can reach and hit),
   plus placement terms: capturers near properties we lack, fighters near enemies they can
-  hit, indirects with enemies in their ring; a penalty for blocking our own base.
+  hit (by terrain distance for their move type; a target on a tile the fighter cannot enter,
+  like a ship for a tank or the shore for a ship, is approached from its best neighbour),
+  indirects with enemies in their ring; foot soldiers riding a T-Copter or Lander valued by
+  how fast the transport brings them to a property (a lander by way of a shoal or port); air
+  and sea units short of fuel to get back to an own airport or port lose up to `fuel_risk`
+  percent of their cost; a penalty for standing on a factory that builds something here.
+- The threat map knows dived subs only fear cruisers and subs, and air units take no
+  terrain cover.
 - `BeamTurns`: builds a turn one action at a time, keeping the `width` best partial turns
-  (distinct positions) by PlanScore; only improving actions extend a turn. Plain moves are
-  scored as a delta of the moving unit's terms without playing them.
+  (distinct positions) by PlanScore; only improving actions extend a turn. Plain moves (and
+  dives and surfaces) are scored as a delta of the moving unit's terms without playing them;
+  generated moves carry the move points they spend, so the moved unit's fuel is known.
 - `PlanTurn`: negamax over turns. Our candidate turns from the beam, the reply's from its
   beam, narrowing by 2 per level; the leaf is the next side's greedy turn score. Deepens by
   two turns at a time until the clock runs out.

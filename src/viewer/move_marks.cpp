@@ -87,7 +87,7 @@ void DrawReticle(const Canvas& canvas, int tile) {
 // a destroyed unit stays as a grey ghost under a red cross
 void DrawWreck(const Canvas& canvas, int tile, UnitType type, int owner) {
     Frame f = TileFrame(canvas, tile);
-    DrawUnit(canvas.renderer, type, owner, f.x, f.y, f.s, true);
+    DrawUnit(canvas.renderer, type, owner, f.x, f.y, f.s, true, false);
     float t = canvas.tile;
     Vec2 a = f.P(0.24f, 0.24f);
     Vec2 b = f.P(0.76f, 0.76f);
@@ -194,6 +194,13 @@ void DrawMoveMarks(const Canvas& canvas, const MoveReport& report, const Positio
     case MoveKind::Unload: {
         Frame f = TileFrame(canvas, report.move.target);
         DrawChip(canvas, f.P(0.5f, 0.12f), "dropped", kPlayer[report.side], kInk);
+        return;
+    }
+    case MoveKind::Dive:
+    case MoveKind::Surface: {
+        Frame f = TileFrame(canvas, report.move.to);
+        const char* text = report.move.kind == MoveKind::Dive ? "dived" : "surfaced";
+        DrawChip(canvas, f.P(0.5f, 0.12f), text, kPlayer[report.side], kInk);
         return;
     }
     case MoveKind::Attack:

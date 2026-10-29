@@ -1,5 +1,6 @@
 #include "game/position.hpp"
 #include "io/map_file.hpp"
+#include "rule_helpers.hpp"
 #include "tests.hpp"
 
 #include <memory>
@@ -8,49 +9,6 @@
 using namespace shoal;
 
 namespace {
-
-std::unique_ptr<Map> MapFrom(const char* text) {
-    auto map = std::make_unique<Map>();
-    std::string error;
-    if (!LoadMapText(text, map.get(), &error)) {
-        std::printf("map error: %s\n", error.c_str());
-    }
-    return map;
-}
-
-Move M(const Map& map, const char* text) {
-    Move move;
-    ParseMoveText(map, text, &move);
-    return move;
-}
-
-bool Play(const Map& map, Position* pos, const char* text) {
-    Move move = M(map, text);
-    if (!IsLegal(map, *pos, move)) {
-        std::printf("illegal: %s\n", text);
-        return false;
-    }
-    ApplyMove(map, pos, move);
-    return true;
-}
-
-const Unit* UnitOn(const Map& map, const Position& pos, const char* tile_name) {
-    int tile = 0;
-    ParseTileName(map, tile_name, &tile);
-    if (pos.unit_at[tile] == kNoUnit) {
-        return nullptr;
-    }
-    return &pos.units[pos.unit_at[tile]];
-}
-
-Unit MakeUnit(UnitType type, int owner, int hp, int ammo) {
-    Unit unit;
-    unit.type = type;
-    unit.owner = static_cast<std::uint8_t>(owner);
-    unit.hp = static_cast<std::uint8_t>(hp);
-    unit.ammo = static_cast<std::uint8_t>(ammo);
-    return unit;
-}
 
 void DamageTests(TestResults& r) {
     auto map = MapFrom(R"((map (tiles ".wc")))");
@@ -63,7 +21,7 @@ void DamageTests(TestResults& r) {
     CHECK(r, AttackDamage(*map, art, tank, 0) == 63);
     CHECK(r, AttackDamage(*map, md, tank, 2) == 59); // 85 * 0.7 rounds down
     Unit hurt = inf;
-    hurt.hp = 41; // shows 5
+    hurt.hp = 41;                                     // shows 5
     CHECK(r, AttackDamage(*map, hurt, inf, 0) == 24); // 55 * 0.5 * 0.9 = 24.75
     Unit dry = tank;
     dry.ammo = 0; // out of shells: machine gun against a tank

@@ -30,6 +30,9 @@ int ActionRank(const Move& move) {
         return 1;
     case MoveKind::Unload:
         return 1;
+    case MoveKind::Dive:
+    case MoveKind::Surface:
+        return 1;
     case MoveKind::Wait:
     case MoveKind::Join:
     case MoveKind::Load:
@@ -62,6 +65,10 @@ std::string ActionLabel(const State& state, const Move& move) {
         return "Join";
     case MoveKind::Load:
         return "Load";
+    case MoveKind::Dive:
+        return "Dive";
+    case MoveKind::Surface:
+        return "Surface";
     case MoveKind::Unload: {
         const Unit& transport = pos.units[pos.unit_at[move.from]];
         return "Drop " + std::string(Spec(transport.cargo[move.slot].type).name) + " on " +
@@ -117,7 +124,7 @@ bool SelectTile(State* state, int tile) {
     std::uint8_t index = pos.unit_at[tile];
     if (index != kNoUnit) {
         const Unit& unit = pos.units[index];
-        if (unit.owner != pos.side || unit.done) {
+        if (unit.owner != pos.side || (unit.done && unit.done != kDropping)) {
             return false;
         }
         for (const Move& move : LegalMoves(*state)) {
@@ -131,8 +138,7 @@ bool SelectTile(State* state, int tile) {
     }
     // an empty own base offers what it can build
     int prop = map.property_at[tile];
-    if (prop == kNoProperty || map.tiles[tile] != Terrain::Base ||
-        pos.prop_owner[prop] != pos.side) {
+    if (prop == kNoProperty || !IsFactory(map.tiles[tile]) || pos.prop_owner[prop] != pos.side) {
         return false;
     }
     for (const Move& move : LegalMoves(*state)) {

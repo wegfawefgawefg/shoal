@@ -12,8 +12,10 @@ struct EvalWeights {
     int property_base = 1031; // a property's worth on top of its income
     int property_days = 3;    // days of income a property is worth at most
     int capture_share = 63;   // percent of a property's worth a half-done capture earns, pro rata
-    // inf mech recon tank md neo art rkt aa msl apc
-    int unit_value[kUnitTypeCount] = {181, 103, 69, 146, 73, 100, 94, 100, 111, 100, 100};
+    // inf mech recon tank md neo art rkt aa msl apc, then fighter bomber bcopter tcopter
+    // battleship cruiser lander sub (air and sea untuned yet)
+    int unit_value[kUnitTypeCount] = {181, 103, 69,  146, 73,  100, 94,  100, 111, 100,
+                                      100, 100, 100, 100, 100, 100, 100, 100, 100};
 };
 
 // static score in funds from the view of `side`; positive is good for `side`

@@ -18,6 +18,7 @@ struct TestResults {
     } while (0)
 
 void RunRulesTests(TestResults& results);
+void RunAirSeaTests(TestResults& results);
 void RunFileTests(TestResults& results);
 void RunFuzzTests(TestResults& results);
 void RunPlannerTests(TestResults& results);

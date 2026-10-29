@@ -91,6 +91,15 @@ void DrawCargoPips(const Canvas& canvas, const Frame& f, const Unit& unit) {
     }
 }
 
+// an amber drop in the top right corner: a quarter tank or less
+void DrawFuelWarning(const Canvas& canvas, const Frame& f) {
+    Color amber{0xf4, 0xb7, 0x3c};
+    FillCircle(canvas.renderer, f.P(0.85f, 0.15f), 0.11f * f.s, WithAlpha(kInk, 235));
+    FillCircle(canvas.renderer, f.P(0.85f, 0.18f), 0.06f * f.s, amber);
+    FillTriangle(canvas.renderer, f.P(0.85f, 0.06f), f.P(0.795f, 0.165f), f.P(0.905f, 0.165f),
+                 amber);
+}
+
 void DrawUnits(const Canvas& canvas, const Position& pos) {
     // top rows first so lower units overlap the ones behind them
     const Map& map = *canvas.map;
@@ -102,12 +111,15 @@ void DrawUnits(const Canvas& canvas, const Position& pos) {
         const Unit& unit = pos.units[index];
         Frame f = TileFrame(canvas, tile);
         bool dimmed = unit.done != 0 && unit.owner == pos.side;
-        DrawUnit(canvas.renderer, unit.type, unit.owner, f.x, f.y, f.s, dimmed);
+        DrawUnit(canvas.renderer, unit.type, unit.owner, f.x, f.y, f.s, dimmed, unit.dived != 0);
         int hp = DisplayHp(unit.hp);
         if (hp < 10) {
             DrawHpBadge(canvas, f, hp);
         }
         DrawCargoPips(canvas, f, unit);
+        if (LowFuel(unit)) {
+            DrawFuelWarning(canvas, f);
+        }
     }
 }
 

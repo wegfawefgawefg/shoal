@@ -45,6 +45,17 @@ bool Consistent(const Map& map, const Position& pos, std::string* why) {
             *why = "unit out of range on " + TileName(map, unit.tile);
             return false;
         }
+        bool cargo_ok = unit.cargo_count <= CargoCapacity(unit.type);
+        for (int c = 0; c < unit.cargo_count && cargo_ok; c++) {
+            const Cargo& cargo = unit.cargo[c];
+            cargo_ok = CarriesType(unit.type, cargo.type) && cargo.fuel <= Spec(cargo.type).fuel;
+        }
+        bool done_ok = unit.done <= 1 || (unit.done == kDropping && unit.cargo_count > 0);
+        if (unit.fuel > Spec(unit.type).fuel || (unit.dived && unit.type != UnitType::Sub) ||
+            !cargo_ok || !done_ok) {
+            *why = "bad fuel, dive, cargo or done on " + TileName(map, unit.tile);
+            return false;
+        }
         if (MoveCost(map.tiles[unit.tile], Spec(unit.type).move_type) == 0) {
             *why = "unit on impassable terrain at " + TileName(map, unit.tile);
             return false;
@@ -81,26 +92,18 @@ void FuzzMap(TestResults& r, const Map& map, int games, std::uint64_t seed) {
             }
             Move move = list->moves[Next(&rng) % static_cast<std::uint64_t>(list->count)];
             // a quiet move's delta score must match the full score
-            if (move.kind == MoveKind::Wait) {
-                int from_prop = map.property_at[move.from];
-                bool half_capture =
-                    from_prop != kNoProperty && pos.capture[from_prop] != kCapturePoints;
-                if (!half_capture) {
-                    const Unit& unit = pos.units[pos.unit_at[move.from]];
-                    Unit moved = unit;
-                    moved.tile = move.to;
-                    moved.done = 1;
-                    int delta = PlanScore(*ctx, pos) - PlanUnitTerms(*ctx, pos, unit) +
-                                PlanUnitTerms(*ctx, pos, moved);
-                    Position child = pos;
-                    ApplyMove(map, &child, move);
-                    if (delta != PlanScore(*ctx, child)) {
-                        r.failed++;
-                        std::printf("FAIL %s: delta score %d != full %d for %s\n",
-                                    map.name.c_str(), delta, PlanScore(*ctx, child),
-                                    MoveText(map, move).c_str());
-                        return;
-                    }
+            Unit moved;
+            if (QuietMoved(map, pos, move, &moved)) {
+                const Unit& unit = pos.units[pos.unit_at[move.from]];
+                int delta = PlanScore(*ctx, pos) - PlanUnitTerms(*ctx, pos, unit) +
+                            PlanUnitTerms(*ctx, pos, moved);
+                Position child = pos;
+                ApplyMove(map, &child, move);
+                if (delta != PlanScore(*ctx, child)) {
+                    r.failed++;
+                    std::printf("FAIL %s: delta score %d != full %d for %s\n", map.name.c_str(),
+                                delta, PlanScore(*ctx, child), MoveText(map, move).c_str());
+                    return;
                 }
             }
             ApplyMove(map, &pos, move);
@@ -140,11 +143,12 @@ void RunFuzzTests(TestResults& r) {
         }
         FuzzMap(r, *map, 20, 1);
     }
-    for (int seed = 1; seed <= 6; seed++) {
+    for (int seed = 1; seed <= 12; seed++) {
         auto map = std::make_unique<Map>();
         MapGenOptions gen;
-        gen.width = gen.height = 8 + seed * 2;
+        gen.width = gen.height = 8 + (seed + 1) / 2 * 2;
         gen.seed = static_cast<std::uint64_t>(seed);
+        gen.water = seed % 2 == 0;
         GenerateMap(gen, map.get());
         FuzzMap(r, *map, 4, static_cast<std::uint64_t>(seed));
     }
