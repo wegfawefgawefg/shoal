@@ -58,12 +58,22 @@ Position AfterEnd(const Map& map, const Position& end) {
     return next;
 }
 
-// leaf value for the side to move: how good its own greedy turn would be
+// leaf value for the side to move: how good its own greedy turn would be (leaf_mode 1), the
+// position as it stands (0), or halfway between (2)
 int Leaf(Planner* planner, const Position& pos) {
     if (pos.result != Result::Ongoing) {
         return ResultScore(pos.result, pos.side);
     }
-    return GreedyTurn(planner, pos).score;
+    if (planner->leaf_mode == 1) {
+        return GreedyTurn(planner, pos).score;
+    }
+    PlanContext& ctx = *planner->leaf_context;
+    PlanBegin(&ctx, *planner->map, planner->distances, planner->weights, pos);
+    int now = PlanScore(ctx, pos);
+    if (planner->leaf_mode == 0) {
+        return now;
+    }
+    return (now + GreedyTurn(planner, pos).score) / 2;
 }
 
 int TurnNegamax(Planner* planner, const Position& pos, int turns, int width, int alpha,
@@ -235,6 +245,7 @@ PlannerResult PlanTurnThreaded(Planner* planner, const Position& pos, const Plan
     int width = limits.beam_width > 2 ? limits.beam_width - 2 : 2;
     auto worker = [&](int thread) {
         Planner local = *planner;
+        local.leaf_context = std::make_shared<PlanContext>(); // never shared between threads
         local.plans = 0;
         local.stopped = false;
         for (int step = 0; step < max_steps; step++) {

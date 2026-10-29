@@ -101,6 +101,8 @@ bool ParseEngine(const std::string& text, EngineSpec* spec) {
             spec->turns = std::atoi(value.c_str());
         } else if (key == "beam") {
             spec->beam = std::atoi(value.c_str());
+        } else if (key == "leaf") {
+            spec->leaf = std::atoi(value.c_str());
         } else if (key == "th") {
             spec->threads = std::atoi(value.c_str());
         } else if (key.rfind("w.", 0) == 0) {
@@ -125,6 +127,7 @@ void EngineInit(Engine* engine, const EngineSpec& spec, const Map& map, std::uin
         engine->planner = std::make_unique<Planner>();
         PlannerInit(engine->planner.get(), map);
         engine->planner->weights = spec.weights;
+        engine->planner->leaf_mode = spec.leaf;
     }
 }
 

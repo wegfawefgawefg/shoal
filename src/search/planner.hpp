@@ -5,6 +5,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 namespace shoal {
@@ -36,6 +37,8 @@ struct Planner {
     const Map* map = nullptr;
     DistanceTable distances;
     PlanWeights weights;
+    int leaf_mode = 1; // 0 static, 1 greedy turn, 2 halfway
+    std::shared_ptr<PlanContext> leaf_context = std::make_shared<PlanContext>();
     std::uint64_t plans = 0;
     std::chrono::steady_clock::time_point deadline;
     bool stopped = false;

@@ -24,6 +24,7 @@ struct EngineSpec {
     int turns = 16;
     int beam = 8;
     int threads = 1;
+    int leaf = 1;
     PlanWeights weights;
     std::string text;
 };
