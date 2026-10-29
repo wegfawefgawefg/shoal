@@ -25,16 +25,17 @@ inline int TerrainDistance(const DistanceTable& table, MoveType move_type, int f
 }
 
 // the planner's tunable numbers; names are what engine specs use ("plan:w.exposure=80")
-// defaults from the first SPSA run (2026-10-28), +177 elo over the hand-set ones
+// defaults from SPSA run 2 (2026-10-29), +206 elo over run 1's (which beat the hand-set
+// ones by 177)
 struct PlanWeights {
-    int exposure = 11;         // percent of the expected loss to enemy fire counted
-    int second_hit = 50;       // percent of the second best enemy hit added to the best
-    int capture_reach = 1375;  // a capturer standing next to a property we lack
-    int capture_per_turn = 295; // what each turn of walking to it costs
-    int fight_turns = 5;       // fighters value enemies they can reach within this many turns
-    int fight_share = 70;      // per mille of a fighter's cost, per turn closer than that
-    int base_block = 173;      // our own unit on our base at the end of the turn
-    int idle_funds = 0;        // percent of unspent funds subtracted where bases build
+    int exposure = 13;         // percent of the expected loss to enemy fire counted
+    int second_hit = 0;        // percent of the second best enemy hit added to the best
+    int capture_reach = 391;   // a capturer standing next to a property we lack
+    int capture_per_turn = 63; // what each turn of walking to it costs
+    int fight_turns = 3;       // fighters value enemies they can reach within this many turns
+    int fight_share = 63;      // per mille of the funds a full hit would take, per turn closer
+    int base_block = 361;      // our own unit on our base at the end of the turn
+    int idle_funds = 9;        // percent of unspent funds subtracted where bases build
     EvalWeights eval;
 };
 
