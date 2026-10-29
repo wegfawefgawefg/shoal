@@ -25,18 +25,18 @@ inline int TerrainDistance(const DistanceTable& table, MoveType move_type, int f
 }
 
 // the planner's tunable numbers; names are what engine specs use ("plan:w.exposure=80")
-// defaults from SPSA run 2 (2026-10-29), +206 elo over run 1's (which beat the hand-set
-// ones by 177)
+// defaults from SPSA run 4 (2026-10-29): +112 elo over run 2's, which beat run 1's by 206,
+// which beat the hand-set ones by 177
 struct PlanWeights {
-    int exposure = 13;          // percent of the expected loss to enemy fire counted
-    int second_hit = 0;         // percent of the second best enemy hit added to the best
-    int capture_reach = 391;    // a capturer standing next to a property we lack
-    int capture_per_turn = 63;  // what each turn of walking to it costs
-    int fight_turns = 3;        // fighters value enemies they can reach within this many turns
-    int fight_share = 63;       // per mille of the funds a full hit would take, per turn closer
-    int base_block = 361;       // our own unit on our base at the end of the turn
+    int exposure = 6;           // percent of the expected loss to enemy fire counted
+    int second_hit = 13;        // percent of the second best enemy hit added to the best
+    int capture_reach = 579;    // a capturer standing next to a property we lack
+    int capture_per_turn = 107; // what each turn of walking to it costs
+    int fight_turns = 6;        // fighters value enemies they can reach within this many turns
+    int fight_share = 36;       // per mille of the funds a full hit would take, per turn closer
+    int base_block = 736;       // our own unit on our base at the end of the turn
     int idle_funds = 9;         // percent of unspent funds subtracted where bases build
-    int excess_funds = 50;      // further percent off the funds our bases can't spend next turn
+    int excess_funds = 38;      // further percent off the funds our bases can't spend next turn
     int spend_per_base = 16000; // what one base can spend in a turn, for that cap
     int fuel_risk = 60;         // percent of an air or sea unit's cost lost when it can no
                                 // longer reach an own airport or port before it runs dry
@@ -62,7 +62,7 @@ struct PlanContext {
     // capture value of a foot soldier riding an air or sea transport, by transport type
     mutable std::int32_t ride_cache[kUnitTypeCount][kMaxTiles];
     mutable bool cache_ready[kUnitTypeCount] = {}; // a type's rows are cleared on first use
-    bool blocks_build[kTerrainCount] = {}; // a unit standing here blocks a build
+    bool blocks_build[kTerrainCount] = {};         // a unit standing here blocks a build
 };
 
 void PlanBegin(PlanContext* ctx, const Map& map, const DistanceTable& distances,

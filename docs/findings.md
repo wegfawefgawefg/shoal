@@ -40,6 +40,7 @@ in the tiny range; bigger questions go to the planner.
 | SPSA run 1 weights | hand-set weights | 32 | +19 =9 -4 | +177 |
 | SPSA run 2 weights | run 1 weights | 32 | +22 =5 -5 | +206 |
 | run 2 + damage-weighted placement | run 1 weights, same code | 32 | +25 =5 -2 | +314 |
+| SPSA run 4 weights (maps 9-18, 1-3 bases) | run 2 weights | 32 | +17 =8 -7 | +112 |
 | beam 12 (t=0.3) | beam 8 | 24 | +11 =9 -4 | +104 |
 | beam 16 (t=0.3) | beam 12 | 24 | +11 =5 -8 | +44 (noise) |
 | beam narrows 4 per turn deeper | narrows 2 | 24 | +14 =2 -8 | +89 |
