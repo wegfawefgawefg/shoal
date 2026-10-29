@@ -63,6 +63,83 @@ bool FreeFor(const Map& map, int tile) {
            tile != Mirror(map, tile);
 }
 
+// a lake around the centre, long along the other diagonal so it sits between the armies;
+// symmetric because the shape is. Land next to the water becomes shoal
+void AddLake(GenRng* rng, Map* map) {
+    int n = map->width * map->height;
+    double cx = (map->width - 1) * 0.5;
+    double cy = (map->height - 1) * 0.5;
+    int side = map->width < map->height ? map->width : map->height;
+    double length = side * (0.26 + rng->Below(10) * 0.012);
+    double breadth = side * (0.11 + rng->Below(6) * 0.014);
+    if (breadth < 1.0) {
+        breadth = 1.0;
+    }
+    for (int tile = 0; tile < n; tile++) {
+        double dx = TileX(*map, tile) - cx;
+        double dy = TileY(*map, tile) - cy;
+        double along = (dx - dy) * 0.7071;
+        double across = (dx + dy) * 0.7071;
+        double r = along * along / (length * length) + across * across / (breadth * breadth);
+        if (r <= 1.0 && map->tiles[tile] == Terrain::Plain &&
+            map->tiles[Mirror(*map, tile)] == Terrain::Plain) {
+            SetPair(map, tile, Terrain::Sea);
+        }
+    }
+    for (int tile = 0; tile < n; tile++) {
+        if (map->tiles[tile] != Terrain::Plain) {
+            continue;
+        }
+        int around[4];
+        int count = Neighbours(*map, tile, around);
+        for (int i = 0; i < count; i++) {
+            if (map->tiles[around[i]] == Terrain::Sea) {
+                SetPair(map, tile, Terrain::Shoal);
+                break;
+            }
+        }
+    }
+    // a reef pair out in the water now and then
+    for (int tries = 0; tries < 40; tries++) {
+        int tile = rng->Below(n);
+        if (map->tiles[tile] != Terrain::Sea || tile == Mirror(*map, tile)) {
+            continue;
+        }
+        int around[4];
+        int count = Neighbours(*map, tile, around);
+        bool open = count == 4;
+        for (int i = 0; i < count; i++) {
+            open = open && map->tiles[around[i]] == Terrain::Sea;
+        }
+        if (open && rng->Below(2) == 0) {
+            SetPair(map, tile, Terrain::Reef);
+        }
+        break;
+    }
+}
+
+// the shore tile nearest the hq becomes its port
+bool AddPort(Map* map, int hq) {
+    int n = map->width * map->height;
+    int best = -1;
+    for (int tile = 0; tile < n; tile++) {
+        if (map->tiles[tile] != Terrain::Shoal || tile == Mirror(*map, tile)) {
+            continue;
+        }
+        if (Distance(*map, tile, hq) >= Distance(*map, tile, Mirror(*map, hq))) {
+            continue; // the other side's shore
+        }
+        if (best < 0 || Distance(*map, tile, hq) < Distance(*map, best, hq)) {
+            best = tile;
+        }
+    }
+    if (best < 0) {
+        return false;
+    }
+    SetPair(map, best, Terrain::Port);
+    return true;
+}
+
 bool TryGenerate(const MapGenOptions& options, GenRng* rng, Map* map) {
     *map = Map{};
     map->width = options.width;
@@ -73,6 +150,13 @@ bool TryGenerate(const MapGenOptions& options, GenRng* rng, Map* map) {
                           UnitType::MdTank, UnitType::Neotank, UnitType::Artillery,
                           UnitType::Rockets, UnitType::AntiAir, UnitType::Apc}) {
         map->buildable[static_cast<int>(type)] = true;
+    }
+    if (options.water) {
+        for (UnitType type : {UnitType::Missiles, UnitType::Fighter, UnitType::Bomber,
+                              UnitType::BCopter, UnitType::TCopter, UnitType::Battleship,
+                              UnitType::Cruiser, UnitType::Lander, UnitType::Sub}) {
+            map->buildable[static_cast<int>(type)] = true;
+        }
     }
     int n = map->width * map->height;
     for (int tile = 0; tile < n; tile++) {
@@ -95,6 +179,27 @@ bool TryGenerate(const MapGenOptions& options, GenRng* rng, Map* map) {
         }
         SetPair(map, tile, Terrain::Base);
         bases_placed++;
+    }
+    if (options.water) {
+        bool airport = false;
+        for (int tries = 0; tries < 100 && !airport; tries++) {
+            int x = TileX(*map, hq) + rng->Below(5);
+            int y = TileY(*map, hq) + rng->Below(5);
+            if (x >= map->width || y >= map->height) {
+                continue;
+            }
+            int tile = TileAt(*map, x, y);
+            if (Distance(*map, tile, hq) < 2 || !FreeFor(*map, tile)) {
+                continue;
+            }
+            SetPair(map, tile, Terrain::Airport);
+            airport = true;
+        }
+        IndexProperties(map); // neighbour lists for the shore
+        AddLake(rng, map);
+        if (!airport || !AddPort(map, hq)) {
+            return false;
+        }
     }
 
     // neutral cities over the whole board
@@ -144,15 +249,15 @@ bool TryGenerate(const MapGenOptions& options, GenRng* rng, Map* map) {
         map->start_owner[prop] = kNeutral;
         int tile = map->property_tiles[prop];
         Terrain terrain = map->tiles[tile];
-        if (terrain != Terrain::Hq && terrain != Terrain::Base) {
+        if (terrain != Terrain::Hq && !IsFactory(terrain)) {
             continue;
         }
         // the hq's half of the board is player 0's
         bool near_first = Distance(*map, tile, hq) < Distance(*map, tile, Mirror(*map, hq));
         map->start_owner[prop] = near_first ? 0 : 1;
     }
-    map->name = "gen" + std::to_string(options.width) + "x" + std::to_string(options.height) +
-                "-" + std::to_string(options.seed);
+    map->name = "gen" + std::to_string(options.width) + "x" + std::to_string(options.height) + "-" +
+                std::to_string(options.seed);
     return Connected(*map, hq);
 }
 

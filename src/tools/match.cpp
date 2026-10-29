@@ -23,6 +23,7 @@ struct MatchOptions {
     std::vector<std::string> map_paths;
     int gen_size = 0;
     int gen_count = 0;
+    bool gen_water = false;
     std::uint64_t gen_seed = 1;
     int threads = 4;
     std::string out_dir;
@@ -91,6 +92,8 @@ int RunMatch(int argc, char** argv) {
         } else if (arg == "--gen" && i + 2 < argc) {
             options.gen_size = std::atoi(argv[++i]);
             options.gen_count = std::atoi(argv[++i]);
+        } else if (arg == "--water") {
+            options.gen_water = true;
         } else if (arg == "--seed" && has_value) {
             options.gen_seed = std::strtoull(argv[++i], nullptr, 10);
         } else if (arg == "--threads" && has_value) {
@@ -106,7 +109,7 @@ int RunMatch(int argc, char** argv) {
     }
     if (!have_a || !have_b) {
         std::fprintf(stderr, "usage: shoal match --a ENGINE --b ENGINE [maps...] "
-                             "[--gen SIZE COUNT] [--seed S] [--threads T] [--out DIR]\n"
+                             "[--gen SIZE COUNT] [--water] [--seed S] [--threads T] [--out DIR]\n"
                              "  ENGINE: plan:t=0.5:turns=3:beam=6 | ply:t=0.5 | greedy | "
                              "random\n");
         return 1;
@@ -127,6 +130,7 @@ int RunMatch(int argc, char** argv) {
         MapGenOptions gen;
         gen.width = options.gen_size;
         gen.height = options.gen_size;
+        gen.water = options.gen_water;
         gen.seed = options.gen_seed + static_cast<std::uint64_t>(i);
         GenerateMap(gen, map.get());
         maps.push_back(std::move(map));
@@ -150,8 +154,8 @@ int RunMatch(int argc, char** argv) {
             const EngineSpec& first = task.a_first ? options.a : options.b;
             const EngineSpec& second = task.a_first ? options.b : options.a;
             auto record = std::make_unique<GameRecord>();
-            Result result = PlayGame(map, first, second, static_cast<std::uint64_t>(index),
-                                     record.get());
+            Result result =
+                PlayGame(map, first, second, static_cast<std::uint64_t>(index), record.get());
             bool a_won = (result == Result::Win0 && task.a_first) ||
                          (result == Result::Win1 && !task.a_first);
             bool b_won = (result == Result::Win0 && !task.a_first) ||
@@ -166,8 +170,8 @@ int RunMatch(int argc, char** argv) {
                         ResultTextFor(result), record->moves.size());
             std::fflush(stdout);
             if (!options.out_dir.empty()) {
-                std::string path = options.out_dir + "/" + map.name + (task.a_first ? "-a0" : "-a1") +
-                                   ".sexp";
+                std::string path =
+                    options.out_dir + "/" + map.name + (task.a_first ? "-a0" : "-a1") + ".sexp";
                 WriteWholeFile(path, WriteGameText(*record));
             }
         }
@@ -182,24 +186,32 @@ int RunMatch(int argc, char** argv) {
     int games = totals.a_wins + totals.b_wins + totals.draws;
     double score = games > 0 ? (totals.a_wins + 0.5 * totals.draws) / games : 0.5;
     std::printf("\n%s vs %s: %d games  +%d =%d -%d  score %.3f  elo %+.0f\n",
-                options.a.text.c_str(), options.b.text.c_str(), games, totals.a_wins,
-                totals.draws, totals.b_wins, score, EloDiff(score));
+                options.a.text.c_str(), options.b.text.c_str(), games, totals.a_wins, totals.draws,
+                totals.b_wins, score, EloDiff(score));
     std::printf("first player won %d, second won %d\n", totals.first_wins, totals.second_wins);
     return 0;
 }
 
 int RunGenMap(int argc, char** argv) {
     MapGenOptions gen;
-    for (int i = 0; i + 1 < argc; i += 2) {
+    for (int i = 0; i < argc; i++) {
         std::string arg = argv[i];
+        if (arg == "--water") {
+            gen.water = true;
+            continue;
+        }
+        if (i + 1 >= argc) {
+            break;
+        }
+        const char* value = argv[++i];
         if (arg == "--size") {
-            gen.width = gen.height = std::atoi(argv[i + 1]);
+            gen.width = gen.height = std::atoi(value);
         } else if (arg == "--seed") {
-            gen.seed = std::strtoull(argv[i + 1], nullptr, 10);
+            gen.seed = std::strtoull(value, nullptr, 10);
         } else if (arg == "--days") {
-            gen.day_limit = std::atoi(argv[i + 1]);
+            gen.day_limit = std::atoi(value);
         } else if (arg == "--bases") {
-            gen.bases_per_side = std::atoi(argv[i + 1]);
+            gen.bases_per_side = std::atoi(value);
         }
     }
     auto map = std::make_unique<Map>();

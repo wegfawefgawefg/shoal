@@ -21,7 +21,7 @@ void PrintUsage() {
                 "  shoal planplay <map> [--time S] [--turns N] [--beam W] [--out game.sexp]\n"
                 "  shoal analyse <game> [--time S] [--threads N] [--out annotated.sexp]\n"
                 "  shoal match --a ENGINE --b ENGINE [maps...] [--gen SIZE COUNT] [--threads T]\n"
-                "  shoal genmap [--size N] [--seed S] [--days D] [--bases B]\n"
+                "  shoal genmap [--size N] [--seed S] [--days D] [--bases B] [--water]\n"
                 "  shoal tune [--rounds N] [--maps M] [--threads T] [--time S] [--rate R]\n"
                 "  shoal stats <games or dirs...>  builds, trades and results over games\n");
 }

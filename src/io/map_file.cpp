@@ -101,12 +101,16 @@ bool ReadUnit(gsexp::Node form, Map* map, std::string* error) {
     if (form.child_count() < 4 || !ParseInt(form.child_at(1), &unit.owner) ||
         !UnitTypeFromShortName(form.child_at(2).text(), &type) ||
         !ParseTileName(*map, form.child_at(3).text(), &tile)) {
-        return Fail(error, "unit wants (unit owner type tile [hp])");
+        return Fail(error, "unit wants (unit owner type tile [hp [fuel]])");
     }
     unit.type = type;
     unit.tile = tile;
     if (form.child_count() >= 5 && !ParseInt(form.child_at(4), &unit.hp)) {
         return Fail(error, "unit hp must be a number");
+    }
+    if (form.child_count() >= 6 &&
+        (!ParseInt(form.child_at(5), &unit.fuel) || unit.fuel < 0 || unit.fuel > Spec(type).fuel)) {
+        return Fail(error, "unit fuel must be 0 up to a full tank");
     }
     if (unit.owner < 0 || unit.owner > 1 || unit.hp < 1 || unit.hp > 100) {
         return Fail(error, "unit owner must be 0/1 and hp 1..100");
@@ -217,8 +221,11 @@ void WriteMapForm(const Map& map, std::ostringstream& out, const char* indent) {
     for (const StartUnit& unit : map.start_units) {
         out << indent << "  (unit " << unit.owner << " " << Spec(unit.type).short_name << " "
             << TileName(map, unit.tile);
-        if (unit.hp != 100) {
+        if (unit.hp != 100 || unit.fuel >= 0) {
             out << " " << unit.hp;
+        }
+        if (unit.fuel >= 0) {
+            out << " " << unit.fuel;
         }
         out << ")\n";
     }

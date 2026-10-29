@@ -302,7 +302,7 @@ void SetupStart(const Map& map, Position* pos) {
         unit.owner = static_cast<std::uint8_t>(start.owner);
         unit.hp = static_cast<std::uint8_t>(start.hp);
         unit.ammo = static_cast<std::uint8_t>(Spec(start.type).ammo);
-        unit.fuel = static_cast<std::uint8_t>(Spec(start.type).fuel);
+        unit.fuel = static_cast<std::uint8_t>(start.fuel < 0 ? Spec(start.type).fuel : start.fuel);
         unit.tile = static_cast<std::uint16_t>(start.tile);
         pos->unit_at[start.tile] = static_cast<std::uint8_t>(index);
     }

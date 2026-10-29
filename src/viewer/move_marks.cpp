@@ -87,7 +87,7 @@ void DrawReticle(const Canvas& canvas, int tile) {
 // a destroyed unit stays as a grey ghost under a red cross
 void DrawWreck(const Canvas& canvas, int tile, UnitType type, int owner) {
     Frame f = TileFrame(canvas, tile);
-    DrawUnit(canvas.renderer, type, owner, f.x, f.y, f.s, true);
+    DrawUnit(canvas.renderer, type, owner, f.x, f.y, f.s, true, false);
     float t = canvas.tile;
     Vec2 a = f.P(0.24f, 0.24f);
     Vec2 b = f.P(0.76f, 0.76f);

@@ -21,6 +21,7 @@ struct StartUnit {
     int owner = 0;
     int tile = 0;
     int hp = 100;
+    int fuel = -1; // -1: a full tank
 };
 
 // everything about a game that never changes while it is played

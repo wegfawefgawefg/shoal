@@ -40,6 +40,11 @@ inline int DisplayHp(int hp) {
     return (hp + 9) / 10;
 }
 
+// a quarter tank or less
+inline bool LowFuel(const Unit& unit) {
+    return unit.fuel * 4 <= Spec(unit.type).fuel;
+}
+
 enum class Result : std::uint8_t {
     Ongoing,
     Win0,

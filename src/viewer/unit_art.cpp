@@ -1,6 +1,7 @@
 #include "unit_art.hpp"
 
 #include "palette.hpp"
+#include "unit_parts.hpp"
 
 #include <cmath>
 #include <initializer_list>
@@ -8,108 +9,6 @@
 namespace shoal {
 
 namespace {
-
-enum class Tone : std::uint8_t {
-    Body,
-    Deep,
-    Light,
-    Metal,
-    Dark,
-    Glass,
-    Face,
-};
-
-enum class PartKind : std::uint8_t {
-    Poly,
-    Circle,
-    Capsule,
-};
-
-constexpr int kMaxPoints = 8;
-constexpr int kMaxParts = 32;
-
-// one piece of a silhouette in 0..1 tile coordinates, facing right
-struct Part {
-    PartKind kind = PartKind::Poly;
-    Tone tone = Tone::Body;
-    bool detail = false; // details sit on top and get no outline
-    Vec2 points[kMaxPoints];
-    int count = 0;
-    float radius = 0; // circle radius, capsule half width
-};
-
-struct Art {
-    Part parts[kMaxParts];
-    int count = 0;
-};
-
-Part* NewPart(Art* art, PartKind kind, Tone tone, bool detail) {
-    if (art->count >= kMaxParts) {
-        return &art->parts[kMaxParts - 1];
-    }
-    Part* part = &art->parts[art->count++];
-    *part = Part{};
-    part->kind = kind;
-    part->tone = tone;
-    part->detail = detail;
-    return part;
-}
-
-void AddPoly(Art* art, Tone tone, std::initializer_list<Vec2> points, bool detail = false) {
-    Part* part = NewPart(art, PartKind::Poly, tone, detail);
-    for (Vec2 p : points) {
-        if (part->count < kMaxPoints) {
-            part->points[part->count++] = p;
-        }
-    }
-}
-
-void AddRect(Art* art, Tone tone, float x, float y, float w, float h, bool detail = false) {
-    AddPoly(art, tone, {{x, y}, {x + w, y}, {x + w, y + h}, {x, y + h}}, detail);
-}
-
-// a box of length len and height h centred at (cx, cy), tilted up by angle radians
-void AddBox(Art* art, Tone tone, float cx, float cy, float len, float h, float angle,
-            bool detail = false) {
-    float c = std::cos(angle);
-    float s = -std::sin(angle);
-    float hx = len * 0.5f;
-    float hy = h * 0.5f;
-    Vec2 corners[4] = {{-hx, -hy}, {hx, -hy}, {hx, hy}, {-hx, hy}};
-    Part* part = NewPart(art, PartKind::Poly, tone, detail);
-    for (const Vec2& k : corners) {
-        part->points[part->count++] = Vec2{cx + k.x * c - k.y * s, cy + k.x * s + k.y * c};
-    }
-}
-
-void AddCircle(Art* art, Tone tone, float cx, float cy, float r, bool detail = false) {
-    Part* part = NewPart(art, PartKind::Circle, tone, detail);
-    part->points[0] = Vec2{cx, cy};
-    part->count = 1;
-    part->radius = r;
-}
-
-void AddCapsule(Art* art, Tone tone, Vec2 a, Vec2 b, float width, bool detail = false) {
-    Part* part = NewPart(art, PartKind::Capsule, tone, detail);
-    part->points[0] = a;
-    part->points[1] = b;
-    part->count = 2;
-    part->radius = width * 0.5f;
-}
-
-void AddTreads(Art* art, float x0, float x1, float y, float h, int wheels, float wheel_r) {
-    AddCapsule(art, Tone::Dark, {x0 + h * 0.5f, y}, {x1 - h * 0.5f, y}, h);
-    for (int i = 0; i < wheels; i++) {
-        float t = wheels == 1 ? 0.5f : static_cast<float>(i) / static_cast<float>(wheels - 1);
-        float wx = x0 + h * 0.5f + (x1 - x0 - h) * t;
-        AddCircle(art, Tone::Metal, wx, y, wheel_r, true);
-    }
-}
-
-void AddWheel(Art* art, float cx, float cy, float r) {
-    AddCircle(art, Tone::Dark, cx, cy, r);
-    AddCircle(art, Tone::Metal, cx, cy, r * 0.45f, true);
-}
 
 void AddSoldierHead(Art* art, float cx, float cy) {
     AddCircle(art, Tone::Body, cx, cy, 0.085f);
@@ -281,6 +180,30 @@ void BuildArt(UnitType type, Art* art) {
     case UnitType::Apc:
         BuildApc(art);
         return;
+    case UnitType::Fighter:
+        BuildFighter(art);
+        return;
+    case UnitType::Bomber:
+        BuildBomber(art);
+        return;
+    case UnitType::BCopter:
+        BuildBCopter(art);
+        return;
+    case UnitType::TCopter:
+        BuildTCopter(art);
+        return;
+    case UnitType::Battleship:
+        BuildBattleship(art);
+        return;
+    case UnitType::Cruiser:
+        BuildCruiser(art);
+        return;
+    case UnitType::Lander:
+        BuildLander(art);
+        return;
+    case UnitType::Sub:
+        BuildSub(art);
+        return;
     case UnitType::Count:
         return;
     }
@@ -341,15 +264,35 @@ void DrawPart(SDL_Renderer* renderer, const Part& part, const Frame& f, bool mir
 } // namespace
 
 void DrawUnit(SDL_Renderer* renderer, UnitType type, int owner, float x, float y, float s,
-              bool dimmed) {
+              bool dimmed, bool dived) {
     Art art;
     BuildArt(type, &art);
     Tones tones = MakeTones(owner, dimmed);
+    Domain domain = DomainOf(type);
     Frame f{x, y, s};
     bool mirror = owner == 1;
     float outline = s * 0.03f + 0.6f;
 
-    FillEllipse(renderer, f.P(0.5f, 0.84f), 0.36f * s, 0.06f * s, WithAlpha(kInk, 80));
+    if (domain == Domain::Air) {
+        // aloft: a small shadow on the ground, the craft lifted off it
+        FillEllipse(renderer, f.P(0.54f, 0.88f), 0.26f * s, 0.045f * s, WithAlpha(kInk, 70));
+        f.y -= 0.1f * s;
+    } else if (domain == Domain::Sea) {
+        FillEllipse(renderer, f.P(0.5f, 0.78f), 0.44f * s, 0.06f * s, WithAlpha(kFoam, 110));
+    } else {
+        FillEllipse(renderer, f.P(0.5f, 0.84f), 0.36f * s, 0.06f * s, WithAlpha(kInk, 80));
+    }
+    if (dived) {
+        // under water: a dim shape with no outline, the periscope's ripple on top
+        for (int i = 0; i < art.count; i++) {
+            const Part& part = art.parts[i];
+            Color color = Mix(tones.colors[static_cast<int>(part.tone)], kSea, 0.55f);
+            DrawPart(renderer, part, f, mirror, 0, WithAlpha(color, 120));
+        }
+        float px = mirror ? 0.42f : 0.58f;
+        FillEllipse(renderer, f.P(px, 0.42f), 0.12f * s, 0.035f * s, WithAlpha(kFoam, 150));
+        return;
+    }
     // outlines first, so touching parts read as one shape
     for (int i = 0; i < art.count; i++) {
         if (!art.parts[i].detail) {

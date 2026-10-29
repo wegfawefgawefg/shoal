@@ -137,6 +137,55 @@ std::string UnitName(UnitType type) {
     return std::string(Spec(type).name);
 }
 
+int FocusTile(const State& state, const Position& pos);
+std::string UnitLine(const Map& map, const Unit& unit);
+
+// one line on the focused unit, amber when its tank is low
+void DrawFocusLine(State* state, float y) {
+    const Position& pos = state->positions[static_cast<std::size_t>(state->ply)];
+    int tile = FocusTile(*state, pos);
+    if (tile < 0) {
+        return;
+    }
+    const Unit& unit = pos.units[pos.unit_at[tile]];
+    Color color = LowFuel(unit) ? Color{0xf4, 0xb7, 0x3c} : kTextFaint;
+    DrawText(&state->font, state->layout.report.x, y, Ui(*state, 13), color,
+             UnitLine(state->game.map, unit));
+}
+
+// the unit under the cursor, else the one selected in play mode, else the one that just moved
+int FocusTile(const State& state, const Position& pos) {
+    for (int tile : {state.hover_tile, state.play.selected}) {
+        if (tile >= 0 && pos.unit_at[tile] != kNoUnit) {
+            return tile;
+        }
+    }
+    const MoveReport& r = state.report;
+    if (r.valid && r.move.kind != MoveKind::EndTurn && pos.unit_at[r.move.to] != kNoUnit) {
+        return r.move.to;
+    }
+    return -1;
+}
+
+// "Fighter b4: 7 hp, fuel 22/99, ammo 5/9"
+std::string UnitLine(const Map& map, const Unit& unit) {
+    const UnitSpec& spec = Spec(unit.type);
+    std::string line = std::string(spec.name) + " " + TileName(map, unit.tile) + ": " +
+                       std::to_string(DisplayHp(unit.hp)) + " hp, fuel " +
+                       std::to_string(unit.fuel) + "/" + std::to_string(spec.fuel);
+    if (spec.ammo > 0) {
+        line += ", ammo " + std::to_string(unit.ammo) + "/" + std::to_string(spec.ammo);
+    }
+    if (unit.dived) {
+        line += ", dived";
+    }
+    for (int c = 0; c < unit.cargo_count; c++) {
+        line += c == 0 ? ", carries " : " and ";
+        line += std::string(Spec(unit.cargo[c].type).name);
+    }
+    return line;
+}
+
 void DrawReport(State* state) {
     const Layout& l = state->layout;
     const Map& map = state->game.map;
@@ -148,6 +197,7 @@ void DrawReport(State* state) {
     if (!r.valid) {
         std::string text = state->game.moves.empty() ? "Start position" : "Start of the game";
         DrawText(&state->font, l.report.x, y, size, kTextDim, text);
+        DrawFocusLine(state, y + LineHeight(size) + LineHeight(small));
         return;
     }
     const Move& m = r.move;
@@ -217,6 +267,7 @@ void DrawReport(State* state) {
         Color color = r.attack ? Color{0xff, 0x9a, 0x9f} : kTextDim;
         DrawText(&state->font, l.report.x, y + LineHeight(size), small, color, detail);
     }
+    DrawFocusLine(state, y + LineHeight(size) + LineHeight(small));
 }
 
 void DrawFooter(State* state) {

@@ -45,6 +45,17 @@ bool Consistent(const Map& map, const Position& pos, std::string* why) {
             *why = "unit out of range on " + TileName(map, unit.tile);
             return false;
         }
+        bool cargo_ok = unit.cargo_count <= CargoCapacity(unit.type);
+        for (int c = 0; c < unit.cargo_count && cargo_ok; c++) {
+            const Cargo& cargo = unit.cargo[c];
+            cargo_ok = CarriesType(unit.type, cargo.type) && cargo.fuel <= Spec(cargo.type).fuel;
+        }
+        bool done_ok = unit.done <= 1 || (unit.done == kDropping && unit.cargo_count > 0);
+        if (unit.fuel > Spec(unit.type).fuel || (unit.dived && unit.type != UnitType::Sub) ||
+            !cargo_ok || !done_ok) {
+            *why = "bad fuel, dive, cargo or done on " + TileName(map, unit.tile);
+            return false;
+        }
         if (MoveCost(map.tiles[unit.tile], Spec(unit.type).move_type) == 0) {
             *why = "unit on impassable terrain at " + TileName(map, unit.tile);
             return false;
@@ -132,11 +143,12 @@ void RunFuzzTests(TestResults& r) {
         }
         FuzzMap(r, *map, 20, 1);
     }
-    for (int seed = 1; seed <= 6; seed++) {
+    for (int seed = 1; seed <= 12; seed++) {
         auto map = std::make_unique<Map>();
         MapGenOptions gen;
-        gen.width = gen.height = 8 + seed * 2;
+        gen.width = gen.height = 8 + (seed + 1) / 2 * 2;
         gen.seed = static_cast<std::uint64_t>(seed);
+        gen.water = seed % 2 == 0;
         GenerateMap(gen, map.get());
         FuzzMap(r, *map, 4, static_cast<std::uint64_t>(seed));
     }
