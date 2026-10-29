@@ -39,6 +39,10 @@ Repair: a unit on its own city, base or hq at the start of its turn gets its amm
 heals up to 2 board hp (20 internal), paying a tenth of its cost per board hp gained; if it
 cannot afford 2 it takes 1.
 
+Join: a unit may move onto a friendly unit of the same type that shows less than 10 hp. Hit
+points add (internal, capped at 100); board hp past 10 are refunded at a tenth of the unit's
+cost each; ammo adds up to full. The merged unit has acted and keeps a capture in progress.
+
 Capture: properties have 20 capture points; capturing removes the capturer's board hp.
 Leaving the tile or dying resets the count.
 
@@ -49,4 +53,4 @@ Leaving the tile or dying resets the count.
 - At the end of player 1's turn on the day limit, the player with more properties wins;
   equal is a draw. This is AWBW's days-limit rule.
 
-Not yet in: joining units, APC load/unload and supply, fuel, air and sea units, fog.
+Not yet in: APC load/unload and supply, fuel, air and sea units, fog.

@@ -132,6 +132,27 @@ void EndTurn(const Map& map, Position* pos) {
     StartTurn(map, pos);
 }
 
+// the mover merges into the unit on `to`: hit points add up to 10 on the board, the board hp
+// past 10 come back as funds at a tenth of the unit's cost each, ammo adds up to full; the
+// merged unit has acted and keeps any capture it was making
+void Join(const Map& map, Position* pos, const Move& move) {
+    int mover_index = pos->unit_at[move.from];
+    Unit mover = pos->units[mover_index];
+    Unit& target = pos->units[pos->unit_at[move.to]];
+    int shown = DisplayHp(mover.hp) + DisplayHp(target.hp);
+    if (shown > 10) {
+        pos->funds[mover.owner] += (shown - 10) * Spec(mover.type).cost / 10;
+    }
+    int hp = mover.hp + target.hp;
+    target.hp = static_cast<std::uint8_t>(hp > 100 ? 100 : hp);
+    int ammo = mover.ammo + target.ammo;
+    int full = Spec(mover.type).ammo;
+    target.ammo = static_cast<std::uint8_t>(ammo > full ? full : ammo);
+    target.done = 1;
+    ResetCaptureAt(map, pos, move.from);
+    RemoveUnit(pos, mover_index);
+}
+
 } // namespace
 
 int AttackDamage(const Map& map, const Unit& attacker, const Unit& defender, int defender_tile) {
@@ -216,6 +237,9 @@ void ApplyMove(const Map& map, Position* pos, const Move& move) {
         pos->funds[pos->side] -= Spec(move.build).cost;
         break;
     }
+    case MoveKind::Join:
+        Join(map, pos, move);
+        break;
     case MoveKind::Wait:
     case MoveKind::Attack:
     case MoveKind::Capture: {

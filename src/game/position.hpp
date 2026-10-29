@@ -52,6 +52,7 @@ enum class MoveKind : std::uint8_t {
     Attack,
     Capture,
     Build,
+    Join, // move onto a hurt friendly unit of the same type and merge into it
 };
 
 // one unit action, or the end of the turn; units are named by the tile they start on
@@ -86,6 +87,8 @@ bool IsLegal(const Map& map, const Position& pos, const Move& move);
 // tiles a unit can end its move on (its own tile included); friends can be passed, enemies
 // block; returns the count
 int ReachableTiles(const Map& map, const Position& pos, const Unit& unit, int out[kMaxTiles]);
+// a unit may join `target`: same owner and type, a different unit, and target shows < 10 hp
+bool CanJoin(const Unit& unit, const Unit& target);
 
 // damage percent a full attack would do; 0 when the attacker cannot hit the defender
 int AttackDamage(const Map& map, const Unit& attacker, const Unit& defender, int defender_tile);
@@ -97,7 +100,7 @@ std::uint64_t ComputeHash(const Map& map, const Position& pos);
 // one unit's share of the hash; the hash xors these with the board terms
 std::uint64_t UnitHashKey(const Unit& unit);
 
-// "a2 b2", "a2 b2 x c2", "a2 a2 cap", "b1 build inf", "end"
+// "a2 b2", "a2 b2 x c2", "a2 a2 cap", "a2 b2 join", "b1 build inf", "end"
 std::string MoveText(const Map& map, const Move& move);
 bool ParseMoveText(const Map& map, std::string_view text, Move* move);
 

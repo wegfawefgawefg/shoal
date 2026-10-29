@@ -10,7 +10,11 @@ constexpr int kMaxMovePoints = 10;
 
 } // namespace
 
-int ReachableTiles(const Map& map, const Position& pos, const Unit& unit, int out[kMaxTiles]) {
+namespace {
+
+// reach with the friendly-occupied tiles a unit could join reported separately
+int Reach(const Map& map, const Position& pos, const Unit& unit, int out[kMaxTiles], int* joins,
+          int* join_count) {
     const UnitSpec& spec = Spec(unit.type);
     int tile_count = map.width * map.height;
     std::int8_t left[kMaxTiles];
@@ -55,12 +59,27 @@ int ReachableTiles(const Map& map, const Position& pos, const Unit& unit, int ou
         if (left[tile] < 0) {
             continue;
         }
-        if (pos.unit_at[tile] != kNoUnit && tile != unit.tile) {
+        std::uint8_t occupant = pos.unit_at[tile];
+        if (occupant != kNoUnit && tile != unit.tile) {
+            if (joins != nullptr && CanJoin(unit, pos.units[occupant])) {
+                joins[(*join_count)++] = tile;
+            }
             continue;
         }
         out[count++] = tile;
     }
     return count;
+}
+
+} // namespace
+
+bool CanJoin(const Unit& unit, const Unit& target) {
+    return target.owner == unit.owner && target.type == unit.type && target.tile != unit.tile &&
+           DisplayHp(target.hp) < 10;
+}
+
+int ReachableTiles(const Map& map, const Position& pos, const Unit& unit, int out[kMaxTiles]) {
+    return Reach(map, pos, unit, out, nullptr, nullptr);
 }
 
 namespace {
@@ -168,12 +187,17 @@ void GenerateMoves(const Map& map, const Position& pos, MoveList* list) {
         return;
     }
     int dests[kMaxTiles];
+    int joins[kMaxTiles];
     for (int i = 0; i < pos.unit_count; i++) {
         const Unit& unit = pos.units[i];
         if (unit.owner != pos.side || unit.done) {
             continue;
         }
-        int dest_count = ReachableTiles(map, pos, unit, dests);
+        int join_count = 0;
+        int dest_count = Reach(map, pos, unit, dests, joins, &join_count);
+        for (int j = 0; j < join_count; j++) {
+            Push(list, MoveKind::Join, unit.tile, joins[j], joins[j]);
+        }
         for (int d = 0; d < dest_count; d++) {
             int dest = dests[d];
             PushAttacksFrom(map, pos, unit, unit.tile, dest, list);

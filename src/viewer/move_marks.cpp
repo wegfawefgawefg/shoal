@@ -181,6 +181,11 @@ void DrawMoveMarks(const Canvas& canvas, const MoveReport& report, const Positio
     }
     case MoveKind::Wait:
         return;
+    case MoveKind::Join: {
+        Frame f = TileFrame(canvas, report.move.to);
+        DrawChip(canvas, f.P(0.5f, 0.12f), "joined", kPlayer[report.side], kInk);
+        return;
+    }
     case MoveKind::Attack:
         DrawAttack(canvas, report, before);
         return;

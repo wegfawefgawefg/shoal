@@ -62,6 +62,9 @@ void ScoreMoves(const Map& map, const Position& pos, const MoveList& list,
         case MoveKind::Wait:
             score = history[move.from * kMaxTiles + move.to];
             break;
+        case MoveKind::Join:
+            score = kTacticalBase;
+            break;
         case MoveKind::EndTurn:
             score = -1;
             break;

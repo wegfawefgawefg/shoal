@@ -29,6 +29,7 @@ int ActionRank(const Move& move) {
     case MoveKind::Capture:
         return 1;
     case MoveKind::Wait:
+    case MoveKind::Join:
         return 2;
     default:
         return 3;
@@ -54,6 +55,8 @@ std::string ActionLabel(const State& state, const Move& move) {
     switch (move.kind) {
     case MoveKind::Wait:
         return "Wait";
+    case MoveKind::Join:
+        return "Join";
     case MoveKind::Capture: {
         int prop = map.property_at[move.to];
         int hp = DisplayHp(pos.units[pos.unit_at[move.from]].hp);

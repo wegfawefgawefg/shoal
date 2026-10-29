@@ -75,6 +75,8 @@ std::string MoveText(const Map& map, const Move& move) {
                TileName(map, move.target);
     case MoveKind::Capture:
         return TileName(map, move.from) + " " + TileName(map, move.to) + " cap";
+    case MoveKind::Join:
+        return TileName(map, move.from) + " " + TileName(map, move.to) + " join";
     }
     return "?";
 }
@@ -114,6 +116,10 @@ bool ParseMoveText(const Map& map, std::string_view text, Move* move) {
     }
     if (words.size() == 3 && words[2] == "cap") {
         move->kind = MoveKind::Capture;
+        return true;
+    }
+    if (words.size() == 3 && words[2] == "join") {
+        move->kind = MoveKind::Join;
         return true;
     }
     int target = 0;

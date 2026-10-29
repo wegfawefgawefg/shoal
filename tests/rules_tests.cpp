@@ -156,9 +156,29 @@ void TurnTests(TestResults& r) {
     CHECK(r, pos.result == Result::Win0);
 }
 
+void JoinTests(TestResults& r) {
+    auto map = MapFrom(R"((map (tiles "...." "....") (unit 0 inf a1) (unit 0 inf b1 40)
+                           (unit 0 tank a2) (unit 1 inf d2)))");
+    Position pos;
+    SetupStart(*map, &pos);
+    // only the hurt infantry can be joined; full units and other types cannot
+    CHECK(r, IsLegal(*map, pos, M(*map, "a1 b1 join")));
+    CHECK(r, !IsLegal(*map, pos, M(*map, "b1 a1 join")));
+    CHECK(r, !IsLegal(*map, pos, M(*map, "a2 b1 join")));
+    int funds = pos.funds[0];
+    CHECK(r, Play(*map, &pos, "a1 b1 join"));
+    const Unit* merged = UnitOn(*map, pos, "b1");
+    CHECK(r, merged != nullptr && merged->hp == 100 && merged->done == 1);
+    CHECK(r, UnitOn(*map, pos, "a1") == nullptr);
+    CHECK(r, pos.unit_count == 3);
+    // 10 + 4 board hp: the 4 past 10 come back at 100 each
+    CHECK(r, pos.funds[0] == funds + 400);
+}
+
 } // namespace
 
 void RunRulesTests(TestResults& results) {
+    JoinTests(results);
     DamageTests(results);
     MoveGenTests(results);
     CombatTests(results);

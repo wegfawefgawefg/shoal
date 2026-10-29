@@ -31,7 +31,8 @@ Unit atoms: `inf mech recon tank md neo art rkt aa msl apc`.
         (turn 0 1346 0 none "e6 c4, f4 d3, c3 build tank")
         (turn 9 1189 4944 mistake "o8 build mech, o5 o3 cap")))
 
-Move text: `from to` (wait), `from to x target`, `from to cap`, `tile build type`, `end`.
+Move text: `from to` (wait), `from to x target`, `from to cap`, `from to join`,
+`tile build type`, `end`.
 Loading a game replays it and rejects illegal moves.
 
 `(turn PLY SCORE LOSS MARK "MOVES")`, one per turn start in ply order:

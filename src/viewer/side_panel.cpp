@@ -155,6 +155,10 @@ void DrawReport(State* state) {
         line = "builds " + UnitName(r.mover) + " at " + TileName(map, m.to);
         detail = "costs " + std::to_string(Spec(r.mover).cost);
         break;
+    case MoveKind::Join:
+        line = UnitName(r.mover) + " " + TileName(map, m.from) + " joins the one on " +
+               TileName(map, m.to);
+        break;
     case MoveKind::Wait:
     case MoveKind::Attack:
     case MoveKind::Capture:

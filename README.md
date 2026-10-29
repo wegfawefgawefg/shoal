@@ -59,6 +59,6 @@ The art is drawn from shapes in code; the font is Barlow Semi Condensed (OFL, `d
 
 Maps and games are S-expressions (`maps/`, see `docs/formats.md`). Moves are written like
 `"b2 c2"` (move and wait), `"b2 c2 x c3"` (move and attack c3), `"b1 b1 cap"`,
-`"e5 build inf"` and `"end"`. Tiles are named like chess squares, `a1` top left.
+`"a1 b1 join"`, `"e5 build inf"` and `"end"`. Tiles are named like chess squares, `a1` top left.
 
 Not affiliated with Nintendo or Intelligent Systems. No game assets are included.
