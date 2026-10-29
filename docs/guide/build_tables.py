@@ -40,7 +40,7 @@ def duel_table(stepper, striker):
                   if any(r[i] != "-" for r in rows[1:])]
     rows = [[r[i] for i in keep] for r in rows]
     header = rows[0]
-    out = ['<table class="duel">', "<tr><th>steps in on &darr; / strikes from &rarr;</th>"]
+    out = ['<table class="duel">', "<tr><th>you on &darr; / they hit from &rarr;</th>"]
     out += [f"<th>{name}</th>" for name in header[1:]]
     out.append("</tr>")
     for row in rows[1:]:
@@ -70,7 +70,7 @@ def matrix_table(striker_footing):
     rows = rows_of(block)
     header = rows[0]
     out = ['<table class="matrix">',
-           "<tr><th>steps in &darr; / strikes first &rarr;</th>"]
+           "<tr><th>you &darr; / them &rarr;</th>"]
     out += [f"<th>{NAMES.get(name, name)}</th>" for name in header[1:]]
     out.append("</tr>")
     rank = {"road": "a", "plain": "a", "wood": "b", "city": "c", "own city": "d",

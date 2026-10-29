@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Advance Wars, by the numbers</title>
+<title>Advance Wars by the numbers</title>
 <style>
   :root {
     --ink: #111;
@@ -80,13 +80,10 @@
 <main>
 
 <header>
-  <h1>Advance Wars, by the numbers</h1>
-  <div>Strategy notes for people who already play. Rules: AW2 as Advance Wars By Web plays it,
-  <b>no luck, no COs, no fog</b>. Everything here was computed by <b>shoal</b>, an AW engine:
-  fights played out exactly, small games solved exactly, the rest from engine self-play. Where
-  something is an opinion it says so.</div>
-  <div class="dim">Edition 2, 2026-10-29. Tables are regenerated from the engine
-  (<code>docs/guide/build_tables.py</code>).</div>
+  <h1>Advance Wars by the numbers</h1>
+  <div>AW2 rules (AWBW), no luck, no COs, no fog. Fights are played out exactly by shoal, small
+  games are solved, the rest is engine self-play. Opinions are marked.</div>
+  <div class="dim">Edition 3, 2026-10-29. Tables: <code>docs/guide/build_tables.py</code>.</div>
 </header>
 
 <aside>
@@ -114,24 +111,21 @@
   </table>
 </aside>
 
-<h2>1. Stepping in: the rule that decides even fights</h2>
+<h2>1. Ending your turn in enemy range</h2>
 
-<p>In an even fight between direct units, whoever lands the first hit usually wins. The
-striker hits at full strength, and the counter comes from a damaged unit. So the question
-that matters is: <b>when you have to end your move inside an enemy's threat range, what are
-you standing on, and what is it hitting you from?</b></p>
+<p>Whoever hits first wins an even fight. So don't end your turn in range of an equal unit
+unless your tile is good enough. The tables say what's good enough.</p>
 
-<p>The tables below play that out exactly. Your unit steps in on the footing in the row; the
-enemy strikes first from the footing in the column; then both trade blows where they stand
-until one dies (ammo counted, own cities heal 2 a turn). Each cell gives the result for the
-side that stepped in, and the hit points of both after the first exchange.</p>
+<p>How to read them: you stand on the row's tile. The enemy hits you first from the column's
+tile. Then you trade until one dies. Cell = your result, and both units' HP after the first
+hit.</p>
 
-<h3>Same-type fights: infantry, mech, tank, md tank, neotank</h3>
-<p class="dim">All five do the same base damage (55) to their own kind, so they share one
-table. Shown here for tanks; infantry and mechs also have mountains, which act like cities.</p>
+<h3>Same type (inf, mech, tank, md, neo)</h3>
+<p class="dim">All hit their own type for 55, so one table covers them. Infantry and mechs
+can also use mountains; mountains act like cities.</p>
 <!-- TABLE same-type -->
 <table class="duel">
-<tr><th>steps in on &darr; / strikes from &rarr;</th>
+<tr><th>you on &darr; / they hit from &rarr;</th>
 <th>road</th>
 <th>plain</th>
 <th>wood</th>
@@ -176,35 +170,29 @@ table. Shown here for tanks; infantry and mechs also have mountains, which act l
 </table>
 <!-- /TABLE same-type -->
 
-<div class="rule"><b>Woods are plains. Mountains are cities. Roads are worse than plains.</b>
-Damage counts in displayed hit points, so terrain stars only matter when they push the hit
-across a display boundary. A full hit leaves you on 6 from plains and on 6 from woods, and on
-7 from cities and from mountains. If you have to step into range of an equal unit, a wood is
-no better than open ground; you need 3 stars.</div>
+<div class="rule"><b>Woods = plains. Mountains = cities. Roads &lt; plains.</b> Damage
+counts in displayed HP. A full hit leaves you on 6 on plains or woods, 7 on a city or
+mountain, 5 on a road.</div>
 
-<div class="rule"><b>3 stars only win if the enemy has 2 or fewer.</b> Step in onto a city
-and you win when they hit from road, plain or wood, and lose when they hit from a city or
-mountain. The striker's footing matters as much as yours.</div>
+<div class="rule"><b>You need 3 stars, and they need 2 or fewer.</b> On a city you win if
+they hit from road, plain or wood. You lose if they hit from a city or mountain.</div>
 
-<div class="rule"><b>Your own city wins every same-type fight</b>, whatever the striker stands
-on. The 2 hit points of repair each turn outweigh the first strike. A city you own at the
-front is a fortress for equal units; the same city in enemy hands is a hole.</div>
+<div class="rule"><b>Your own city always wins.</b> The +2 heal beats the first hit.</div>
 
 <div class="row2">
-<figure><img src="img/woods.png" alt="stepping in on woods"><figcaption>Infantry steps in on
-woods: hit to 6, same as on plains (counter leaves the striker on 8). Losing.</figcaption></figure>
-<figure><img src="img/mountain.png" alt="stepping in on a mountain"><figcaption>Same move onto a
-mountain: hit to 7, counter takes the striker to 7. Winning.</figcaption></figure>
+<figure><img src="img/woods.png" alt="woods"><figcaption>Woods: hit to 6, they stay on 8.
+Loses.</figcaption></figure>
+<figure><img src="img/mountain.png" alt="mountain"><figcaption>Mountain: hit to 7, they drop
+to 7. Wins.</figcaption></figure>
 </div>
 
-<h3>Weaker hitters: the thresholds move</h3>
-<p>Recons (35 against each other) and anti-air (45) hit for less, so the boundaries fall
-differently.</p>
+<h3>Recon and anti-air</h3>
+<p>They hit their own type for less (35 and 45), so the cutoffs are different.</p>
 <div class="row2">
 <div><b>Recon vs recon</b>
 <!-- TABLE recon -->
 <table class="duel">
-<tr><th>steps in on &darr; / strikes from &rarr;</th>
+<tr><th>you on &darr; / they hit from &rarr;</th>
 <th>road</th>
 <th>plain</th>
 <th>wood</th>
@@ -252,7 +240,7 @@ differently.</p>
 <div><b>Anti-air vs anti-air</b>
 <!-- TABLE aa -->
 <table class="duel">
-<tr><th>steps in on &darr; / strikes from &rarr;</th>
+<tr><th>you on &darr; / they hit from &rarr;</th>
 <th>road</th>
 <th>plain</th>
 <th>wood</th>
@@ -298,20 +286,18 @@ differently.</p>
 <!-- /TABLE aa -->
 </div>
 </div>
-<div class="rule">For recons, <b>woods are enough</b> against a striker on road or plain.
-For anti-air, woods only beat a striker on a road. The "woods are plains" rule is about the
-55-damage fights, not a law of the game.</div>
+<div class="rule">Recon: woods are enough against road or plain. Anti-air: woods only beat a
+road.</div>
 
-<h2>2. Who can walk into whose range</h2>
+<h2>2. Which units can end their turn in which units' range</h2>
 
-<p>The least footing a unit needs to step into another unit's threat range and still win the
-fight, with the enemy striking first. "Anywhere" means even a road is fine; "never" means it
-loses even on its own city.</p>
+<p>The worst tile you can end on and still win when they hit first. "anywhere" = even a road.
+"never" = you lose even on your own city.</p>
 
-<h3>Enemy strikes from plains</h3>
+<h3>They hit from plains</h3>
 <!-- TABLE matrix-plain -->
 <table class="matrix">
-<tr><th>steps in &darr; / strikes first &rarr;</th>
+<tr><th>you &darr; / them &rarr;</th>
 <th>Infantry</th>
 <th>Mech</th>
 <th>Recon</th>
@@ -404,10 +390,10 @@ loses even on its own city.</p>
 </table>
 <!-- /TABLE matrix-plain -->
 
-<h3>Enemy strikes from a city</h3>
+<h3>They hit from a city</h3>
 <!-- TABLE matrix-city -->
 <table class="matrix">
-<tr><th>steps in &darr; / strikes first &rarr;</th>
+<tr><th>you &darr; / them &rarr;</th>
 <th>Infantry</th>
 <th>Mech</th>
 <th>Recon</th>
@@ -500,103 +486,68 @@ loses even on its own city.</p>
 </table>
 <!-- /TABLE matrix-city -->
 
-<div class="rule"><b>A unit class beats tempo.</b> Md tanks step into tank range anywhere and
-win; tanks never win stepping into md tank range, not even on their own city. The first
-strike is worth one or two display hit points. A class gap is worth more.</div>
+<div class="rule"><b>Md tank can end in tank range anywhere.</b> A tank never wins in md
+range, own city included. A class gap is worth more than the first hit.</div>
 
-<div class="rule"><b>Mechs can't step into tank range</b> except onto their own city. Tanks walk into mech range on plain or better unless the mech is on
-a mountain or its own city. Mechs threaten tanks by waiting, not by advancing.</div>
+<div class="rule"><b>Mechs only end in tank range on their own city.</b> Tanks can end in
+mech range on plains or better, unless the mech is on a mountain or its own city.</div>
 
-<div class="rule"><b>Anti-air walks into infantry and recon range anywhere, and into mech range
-from plains up.</b> Infantry
-that hits a full anti-air from a road dies to the counter; from a plain it's left on 1.</div>
+<div class="rule"><b>Anti-air can end in infantry and recon range anywhere</b>, and in mech
+range on plains or better. Infantry attacking a full anti-air from a road dies to the
+counter.</div>
 
-<div class="rule"><b>Infantry can't step into anything but infantry and mech range</b>, and
-needs a city (or its own city) to do even that. Infantry advance where they can't be hit, or
-as bait.</div>
+<div class="rule"><b>Infantry only wins against infantry (on a city) and mechs (on your own
+city).</b></div>
 
-<h2>3. What this means for maps</h2>
-<p>Footing at the front decides who can advance. From the tables:</p>
+<h2>3. Maps</h2>
 <ul>
-  <li><b>A front of woods doesn't help equal armies.</b> Forests read as cover, but for 55-damage
-  fights they're plains. A no-man's land of woods plays like an open field.</li>
-  <li><b>Cities and mountains at the edge of threat range are where advances happen.</b> The
-  side that reaches 3-star tiles just inside the enemy's threat range, facing 2-star or
-  worse tiles, can step in. Place them to decide which side that is.</li>
-  <li><b>Roads into the enemy are bad for the side using them.</b> 0 stars means being hit to 5
-  instead of 6.</li>
-  <li><b>Cities near the front belong to whoever owns them twice</b>: income, and an
-  unbeatable spot for equal units. Contested cities are the real objectives, not because of the
-  1000 a day.</li>
-  <li><b>Map balance can be checked with these tables:</b> for each side, list the 3-star tiles
-  inside the enemy's threat range facing 2-star or worse tiles. If one side has more, it has
-  more places to advance.</li>
+  <li>Woods between two armies are open ground for even fights.</li>
+  <li>Pushes happen where a 3-star tile inside their range faces 2-star-or-worse tiles. Count
+  those per side to check a map's balance.</li>
+  <li>Roads into the enemy hurt whoever uses them to approach.</li>
+  <li>A front city you own is a fortress for equal units. Taking it from them removes theirs.</li>
 </ul>
 
-<h2>4. The standoff</h2>
-<p>If neither side can step in safely, nobody should step in, and passing is always legal.
-The exact solver confirms it on small boards: infantry against infantry, tank against tank,
-on empty 4x4 and 5x5 maps, are <b>draws with perfect play</b>. On 3x3, where the first
-player can hit on turn one, the first player wins. Something to take changes it: with a city
-in the middle, or HQs in reach, the first player wins.</p>
-<p>So in no-fog AW combat alone doesn't force a decision. Equal armies on bad footing wait,
-and the game is moved by income, captures and the clock. Ranges longer than the enemy's threat
-range break it locally: rockets fire at 5, outside an infantry's 4.</p>
+<h2>4. Standoffs</h2>
+<p>If nobody can end their turn in range safely, nobody should, and you can always pass.
+Solved: infantry vs infantry and tank vs tank on empty 4x4 and 5x5 are draws. On 3x3 (in
+range on turn one) the first player wins. With a city or HQ to take, the first player wins.</p>
+<p>Units that outrange the enemy's threat break it: rockets fire at 5, infantry threaten 4.</p>
 
-<h2>5. Tempo, value and the clock</h2>
-<h3>Moving first is worth about 3000 funds</h3>
-<p>Same engine on both sides, symmetric 12x12 maps, one base each. The second player needed
-about 3000 extra starting funds to break even (0: first player 20-8; +2000: 18-10; +3000:
-31-25; +4000: 10-18). It's the same effect at the start: the first capture of every contested
-city and the first strike of every fight the first player chooses.</p>
+<h2>5. Tempo and value</h2>
+<p><b>Moving first is worth ~3000 funds</b> (12x12 symmetric maps, one base each). Extra
+starting funds for the second player, decisive games first-second: +0: 20-8, +2000: 18-10,
++3000: 31-25, +4000: 10-18.</p>
+<p><b>Unit worth</b>, as share of cost, tuned by self-play: inf 198%, tank 139%, aa 107%,
+mech 104%, neo 96%, art 90%, recon 85%, rockets 81%, md 73%. <span class="dim">Small maps,
+fast games, this engine's play.</span> An md tank beats a tank, but two tanks cost less.</p>
+<p><b>With a day limit, army doesn't count.</b> Turn it into properties or the HQ.</p>
+<figure><img src="img/day-limit-loss.png" alt="day limit loss"><figcaption>Orange had twice
+the army most of the game and lost 13-19 on properties.</figcaption></figure>
 
-<h3>What units are worth to a strong player</h3>
-<p>The engine tunes how much each unit is worth, as a share of its cost, by playing itself
-and keeping what wins: infantry 198%, tank 139%, anti-air 107%, mech 104%, neotank 96%,
-artillery 90%, recon 85%, rockets 81%, md tank 73%. <span class="dim">Tuned on generated
-9x9-18x18 maps at short time controls; it measures value to this engine's play.</span> Read
-next to section 2, an md tank wins every fight against a tank, but two tanks cost less and
-fight in two places.</p>
-
-<h3>Material doesn't win on a clock</h3>
-<figure><img src="img/day-limit-loss.png" alt="lost on the day limit"><figcaption>The side in orange
-had twice the army for most of this 16x16 game and lost on the day limit, 13 properties to 19.
-The eval graph on the right collapses at the end. With a day limit, an army that doesn't turn
-into properties or the enemy HQ is worth nothing at the end.</figcaption></figure>
-
-<h2>6. What we don't know yet</h2>
-<p>Most of what's above is fight arithmetic: exact, but local. The engine isn't strong enough
-yet for its whole-game choices (build orders, when to push, where to fight) to count as
-discoveries. Those are next:</p>
+<h2>6. Not known yet</h2>
 <ul>
-  <li><b>Mining engine games</b>: what winners do differently. How often they step in on bad
-  footing, how they use front cities, when they switch from infantry to tanks.</li>
-  <li><b>Fog</b>: you can only attack what you can see, and infantry see 2 while threatening 4.
-  Fog should make stepping in good again, and turn vision into the resource the standoff is
-  about now. To be solved on small boards.</li>
-  <li><b>Indirects</b>: exact solves of infantry plus artillery against two infantry, rockets
-  against infantry, and a city between two defended lines.</li>
-  <li><b>No day limit</b>: HQ and rout as the only endings; retune and see what changes.</li>
-  <li><b>Bigger duels</b>: fights of two or three units a side, where who attacks in what order
-  matters.</li>
+  <li>Whole-game strategy: build orders, when to push. The engine isn't strong enough yet;
+  next step is mining its games for what winners do differently.</li>
+  <li>Fog: infantry see 2 and threaten 4, so you could end in range unseen. Probably breaks
+  standoffs. To be solved on small boards.</li>
+  <li>Artillery and rockets in exact solves.</li>
+  <li>No day limit (HQ and rout only).</li>
+  <li>Fights of two or three units a side.</li>
 </ul>
 
-<h2>7. What's wrong with no-fog AW</h2>
-<p class="dim">Measured where marked; the rest is opinion.</p>
+<h2>7. Problems with no-fog AW</h2>
+<p class="dim">Measured where marked, else opinion.</p>
 <ol>
-  <li><b>It rewards waiting</b> (measured on small boards, section 4). Combat alone doesn't
-  force a decision; the economy and the clock do.</li>
-  <li><b>The first move is worth a lot</b> (measured, about 3000 funds on small maps).</li>
-  <li><b>Most terrain doesn't matter in even fights</b> (measured, section 1). Woods and plains
-  play the same for the most common fights; the 2-star tile is largely decoration.</li>
-  <li><b>Games get decided by counting</b> (opinion; most engine games here end on the day
-  limit). A property tiebreak cuts a game off, it doesn't settle it.</li>
-  <li><b>With no luck every exchange is known in advance</b> (opinion). Good for analysis,
-  but many fights are decided before they start.</li>
+  <li>Waiting is rewarded (measured on small boards).</li>
+  <li>Moving first is worth ~3000 funds (measured).</li>
+  <li>Woods don't matter in even fights (measured).</li>
+  <li>Day-limit games are decided by counting properties.</li>
+  <li>With no luck, a lot of fights are decided before they start.</li>
 </ol>
 
-<p class="clear dim">Made with shoal, github.com/wegfawefgawefg/shoal. Pictures:
-<code>python3 docs/guide/render.py</code>. Tables: <code>python3 docs/guide/build_tables.py</code>.</p>
+<p class="clear dim">shoal: github.com/wegfawefgawefg/shoal. Pictures:
+<code>python3 docs/guide/render.py</code>.</p>
 
 </main>
 </body>
