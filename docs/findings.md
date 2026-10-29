@@ -84,6 +84,20 @@ Across planner self-play matches on generated 10x10 and 12x12 maps (one base eac
 colours on every map), the first player won 97 decisive games to the second player's 41.
 The edge is large on small symmetric maps; real competitive maps compensate for it.
 
+How much is moving first worth? Same engine both sides (t=0.25), 12x12 generated maps, one
+base each, the second player given extra starting funds (`shoal match --p2-funds F`),
+decisive games first-vs-second:
+
+| second player's extra funds | first won | second won |
+| --- | --- | --- |
+| 0 | 20 | 8 |
+| 2000 | 18 | 10 |
+| 3000 | 31 | 25 (two map sets) |
+| 4000 | 10 | 18 |
+
+So moving first is worth about 3000-3500 funds here: three infantry, or a day and a half of
+income at the start.
+
 ## 200 self-play games on 12x12 (planner t=0.25, run 2 weights, 2026-10-29)
 
 - First player won 118, second 28, draws 54. On small symmetric maps the side that moves

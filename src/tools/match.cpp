@@ -27,6 +27,7 @@ struct MatchOptions {
     std::uint64_t gen_seed = 1;
     int threads = 4;
     std::string out_dir;
+    int p2_funds = 0;  // extra starting funds for the second player, to measure the first move
 };
 
 struct GameTask {
@@ -100,6 +101,8 @@ int RunMatch(int argc, char** argv) {
             options.threads = std::atoi(argv[++i]);
         } else if (arg == "--out" && has_value) {
             options.out_dir = argv[++i];
+        } else if (arg == "--p2-funds" && has_value) {
+            options.p2_funds = std::atoi(argv[++i]);
         } else if (arg.size() > 0 && arg[0] != '-') {
             options.map_paths.push_back(arg);
         } else {
@@ -109,7 +112,7 @@ int RunMatch(int argc, char** argv) {
     }
     if (!have_a || !have_b) {
         std::fprintf(stderr, "usage: shoal match --a ENGINE --b ENGINE [maps...] "
-                             "[--gen SIZE COUNT] [--water] [--seed S] [--threads T] [--out DIR]\n"
+                             "[--gen SIZE COUNT] [--water] [--seed S] [--threads T] [--out DIR] [--p2-funds F]\n"
                              "  ENGINE: plan:t=0.5:turns=3:beam=6 | ply:t=0.5 | greedy | "
                              "random\n");
         return 1;
@@ -134,6 +137,10 @@ int RunMatch(int argc, char** argv) {
         gen.seed = options.gen_seed + static_cast<std::uint64_t>(i);
         GenerateMap(gen, map.get());
         maps.push_back(std::move(map));
+    }
+
+    for (auto& map : maps) {
+        map->start_funds[1] += options.p2_funds;
     }
 
     std::vector<GameTask> tasks;
