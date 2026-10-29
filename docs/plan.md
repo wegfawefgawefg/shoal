@@ -40,6 +40,7 @@ Scope: AW2 tier rules (AWBW), no luck, no COs, production yes, fog later.
    units that can reach the same targets.
 5. Air and sea: tune the new unit values (`value_fighter` ...) and `fuel_risk` by SPSA on
    `--water` maps; check landers and battleships get built and used.
-6. Opening books: `shoal book` exists; build books for the maps the owner plays on stevejobs.
-7. Learned eval: train a small net on planner/self-play positions (stevejobs).
-8. Fog.
+6. Solver: distance-to-win lines (fastest win, longest defence) for the solved games.
+7. Opening books: `shoal book` exists; build books for the maps the owner plays on stevejobs.
+8. Learned eval: train a small net on planner/self-play positions (stevejobs).
+9. Fog.
