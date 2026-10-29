@@ -108,6 +108,18 @@ inline int SecondaryDamage(UnitType attacker, UnitType defender) {
     return kSecondaryDamage[static_cast<int>(attacker)][static_cast<int>(defender)];
 }
 
+// how many units a transport carries, and whether it carries this type
+inline int CargoCapacity(UnitType transport) {
+    return transport == UnitType::Apc ? 1 : 0;
+}
+
+inline bool CarriesType(UnitType transport, UnitType passenger) {
+    if (transport == UnitType::Apc) {
+        return passenger == UnitType::Infantry || passenger == UnitType::Mech;
+    }
+    return false;
+}
+
 bool UnitTypeFromShortName(std::string_view name, UnitType* out);
 
 } // namespace shoal

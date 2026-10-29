@@ -13,8 +13,17 @@ constexpr int kMaxMovePoints = 10;
 namespace {
 
 // reach with the friendly-occupied tiles a unit could join reported separately
-int Reach(const Map& map, const Position& pos, const Unit& unit, int out[kMaxTiles], int* joins,
-          int* join_count) {
+// friendly-occupied tiles the unit could end on are reported apart: units it could join, and
+// transports it could load into
+struct SpecialDests {
+    int joins[kMaxUnits];
+    int join_count = 0;
+    int loads[kMaxUnits];
+    int load_count = 0;
+};
+
+int Reach(const Map& map, const Position& pos, const Unit& unit, int out[kMaxTiles],
+          SpecialDests* special) {
     const UnitSpec& spec = Spec(unit.type);
     int tile_count = map.width * map.height;
     std::int8_t left[kMaxTiles];
@@ -61,8 +70,10 @@ int Reach(const Map& map, const Position& pos, const Unit& unit, int out[kMaxTil
         }
         std::uint8_t occupant = pos.unit_at[tile];
         if (occupant != kNoUnit && tile != unit.tile) {
-            if (joins != nullptr && CanJoin(unit, pos.units[occupant])) {
-                joins[(*join_count)++] = tile;
+            if (special != nullptr && CanJoin(unit, pos.units[occupant])) {
+                special->joins[special->join_count++] = tile;
+            } else if (special != nullptr && CanLoad(unit, pos.units[occupant])) {
+                special->loads[special->load_count++] = tile;
             }
             continue;
         }
@@ -75,11 +86,17 @@ int Reach(const Map& map, const Position& pos, const Unit& unit, int out[kMaxTil
 
 bool CanJoin(const Unit& unit, const Unit& target) {
     return target.owner == unit.owner && target.type == unit.type && target.tile != unit.tile &&
-           DisplayHp(target.hp) < 10;
+           DisplayHp(target.hp) < 10 && unit.cargo_count == 0 && target.cargo_count == 0;
+}
+
+bool CanLoad(const Unit& unit, const Unit& transport) {
+    return transport.owner == unit.owner && transport.tile != unit.tile &&
+           CarriesType(transport.type, unit.type) &&
+           transport.cargo_count < CargoCapacity(transport.type);
 }
 
 int ReachableTiles(const Map& map, const Position& pos, const Unit& unit, int out[kMaxTiles]) {
-    return Reach(map, pos, unit, out, nullptr, nullptr);
+    return Reach(map, pos, unit, out, nullptr);
 }
 
 namespace {
@@ -101,6 +118,27 @@ void Push(MoveList* list, MoveKind kind, int from, int to, int target) {
     move.from = static_cast<std::uint16_t>(from);
     move.to = static_cast<std::uint16_t>(to);
     move.target = static_cast<std::uint16_t>(target);
+    move.slot = 0;
+}
+
+// a transport that ends on `dest` drops each cargo on a free neighbour it can stand on; the
+// tile the transport left is free by then
+void PushUnloads(const Map& map, const Position& pos, const Unit& transport, int dest,
+                 MoveList* list) {
+    int around[4];
+    int around_count = Neighbours(map, dest, around);
+    for (int slot = 0; slot < transport.cargo_count; slot++) {
+        MoveType move_type = Spec(transport.cargo[slot].type).move_type;
+        for (int n = 0; n < around_count; n++) {
+            int drop = around[n];
+            bool free = pos.unit_at[drop] == kNoUnit || drop == transport.tile;
+            if (!free || MoveCost(map.tiles[drop], move_type) == 0) {
+                continue;
+            }
+            Push(list, MoveKind::Unload, transport.tile, dest, drop);
+            list->moves[list->count - 1].slot = static_cast<std::uint8_t>(slot);
+        }
+    }
 }
 
 void PushAttacksFrom(const Map& map, const Position& pos, const Unit& unit, int from, int dest,
@@ -175,6 +213,7 @@ void PushBuilds(const Map& map, const Position& pos, MoveList* list) {
             move.from = static_cast<std::uint16_t>(tile);
             move.to = static_cast<std::uint16_t>(tile);
             move.target = static_cast<std::uint16_t>(tile);
+            move.slot = 0;
         }
     }
 }
@@ -187,19 +226,26 @@ void GenerateMoves(const Map& map, const Position& pos, MoveList* list) {
         return;
     }
     int dests[kMaxTiles];
-    int joins[kMaxTiles];
+    SpecialDests special;
     for (int i = 0; i < pos.unit_count; i++) {
         const Unit& unit = pos.units[i];
         if (unit.owner != pos.side || unit.done) {
             continue;
         }
-        int join_count = 0;
-        int dest_count = Reach(map, pos, unit, dests, joins, &join_count);
-        for (int j = 0; j < join_count; j++) {
-            Push(list, MoveKind::Join, unit.tile, joins[j], joins[j]);
+        special.join_count = 0;
+        special.load_count = 0;
+        int dest_count = Reach(map, pos, unit, dests, &special);
+        for (int j = 0; j < special.join_count; j++) {
+            Push(list, MoveKind::Join, unit.tile, special.joins[j], special.joins[j]);
+        }
+        for (int j = 0; j < special.load_count; j++) {
+            Push(list, MoveKind::Load, unit.tile, special.loads[j], special.loads[j]);
         }
         for (int d = 0; d < dest_count; d++) {
             int dest = dests[d];
+            if (unit.cargo_count > 0) {
+                PushUnloads(map, pos, unit, dest, list);
+            }
             PushAttacksFrom(map, pos, unit, unit.tile, dest, list);
             int prop = map.property_at[dest];
             if (prop != kNoProperty && pos.prop_owner[prop] != pos.side &&

@@ -28,8 +28,11 @@ int ActionRank(const Move& move) {
         return 0;
     case MoveKind::Capture:
         return 1;
+    case MoveKind::Unload:
+        return 1;
     case MoveKind::Wait:
     case MoveKind::Join:
+    case MoveKind::Load:
         return 2;
     default:
         return 3;
@@ -57,6 +60,13 @@ std::string ActionLabel(const State& state, const Move& move) {
         return "Wait";
     case MoveKind::Join:
         return "Join";
+    case MoveKind::Load:
+        return "Load";
+    case MoveKind::Unload: {
+        const Unit& transport = pos.units[pos.unit_at[move.from]];
+        return "Drop " + std::string(Spec(transport.cargo[move.slot].type).name) + " on " +
+               TileName(map, move.target);
+    }
     case MoveKind::Capture: {
         int prop = map.property_at[move.to];
         int hp = DisplayHp(pos.units[pos.unit_at[move.from]].hp);

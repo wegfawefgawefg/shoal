@@ -81,6 +81,16 @@ void DrawHpBadge(const Canvas& canvas, const Frame& f, int hp) {
     DrawTextAligned(canvas.font, badge.x + badge.w * 0.5f, y, size, kText, text, Align::Centre);
 }
 
+// a transport's riders: one small pip each in the top left, in the owner's colour
+void DrawCargoPips(const Canvas& canvas, const Frame& f, const Unit& unit) {
+    for (int i = 0; i < unit.cargo_count; i++) {
+        Rect pip = f.R(0.06f + 0.17f * static_cast<float>(i), 0.06f, 0.14f, 0.14f);
+        FillRoundRect(canvas.renderer, pip, 0.07f * f.s, WithAlpha(kInk, 235));
+        Rect dot = f.R(0.09f + 0.17f * static_cast<float>(i), 0.09f, 0.08f, 0.08f);
+        FillRoundRect(canvas.renderer, dot, 0.04f * f.s, kPlayer[unit.owner]);
+    }
+}
+
 void DrawUnits(const Canvas& canvas, const Position& pos) {
     // top rows first so lower units overlap the ones behind them
     const Map& map = *canvas.map;
@@ -97,6 +107,7 @@ void DrawUnits(const Canvas& canvas, const Position& pos) {
         if (hp < 10) {
             DrawHpBadge(canvas, f, hp);
         }
+        DrawCargoPips(canvas, f, unit);
     }
 }
 

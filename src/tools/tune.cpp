@@ -44,6 +44,9 @@ const TuneParam kParams[] = {
     {"value_md", 6, 40, 250},
     {"value_art", 6, 40, 250},
     {"value_aa", 6, 40, 250},
+    {"value_neo", 6, 40, 250},
+    {"value_rkt", 6, 40, 250},
+    {"value_apc", 6, 40, 250},
 };
 constexpr int kParamCount = sizeof(kParams) / sizeof(kParams[0]);
 

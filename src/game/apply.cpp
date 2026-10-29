@@ -106,6 +106,22 @@ void StartTurn(const Map& map, Position* pos) {
             Repair(map, pos, &unit);
         }
     }
+    // apcs refill the ammo of their own side's units next to them
+    for (int i = 0; i < pos->unit_count; i++) {
+        const Unit& apc = pos->units[i];
+        if (apc.owner != side || apc.type != UnitType::Apc) {
+            continue;
+        }
+        int around[4];
+        int count = Neighbours(map, apc.tile, around);
+        for (int n = 0; n < count; n++) {
+            std::uint8_t index = pos->unit_at[around[n]];
+            if (index != kNoUnit && pos->units[index].owner == side) {
+                Unit& unit = pos->units[index];
+                unit.ammo = static_cast<std::uint8_t>(Spec(unit.type).ammo);
+            }
+        }
+    }
 }
 
 void ScoreDayLimit(const Map& map, Position* pos) {
@@ -151,6 +167,48 @@ void Join(const Map& map, Position* pos, const Move& move) {
     target.done = 1;
     ResetCaptureAt(map, pos, move.from);
     RemoveUnit(pos, mover_index);
+}
+
+// the mover leaves the board and rides in the transport on `to`
+void Load(const Map& map, Position* pos, const Move& move) {
+    int mover_index = pos->unit_at[move.from];
+    Unit mover = pos->units[mover_index];
+    Unit& transport = pos->units[pos->unit_at[move.to]];
+    Cargo& cargo = transport.cargo[transport.cargo_count++];
+    cargo.type = mover.type;
+    cargo.hp = mover.hp;
+    cargo.ammo = mover.ammo;
+    ResetCaptureAt(map, pos, move.from);
+    RemoveUnit(pos, mover_index);
+}
+
+// the transport moves, then puts one cargo on the drop tile; both have acted
+void Unload(const Map& map, Position* pos, const Move& move) {
+    int index = pos->unit_at[move.from];
+    if (move.to != move.from) {
+        pos->unit_at[move.from] = kNoUnit;
+        pos->unit_at[move.to] = static_cast<std::uint8_t>(index);
+        pos->units[index].tile = move.to;
+    }
+    Unit& transport = pos->units[index];
+    transport.done = 1;
+    Cargo cargo = transport.cargo[move.slot];
+    for (int i = move.slot; i + 1 < transport.cargo_count; i++) {
+        transport.cargo[i] = transport.cargo[i + 1];
+    }
+    transport.cargo_count--;
+    transport.cargo[transport.cargo_count] = Cargo{};
+    int dropped = pos->unit_count++;
+    Unit& unit = pos->units[dropped];
+    unit = Unit{};
+    unit.type = cargo.type;
+    unit.owner = transport.owner;
+    unit.hp = cargo.hp;
+    unit.ammo = cargo.ammo;
+    unit.tile = move.target;
+    unit.done = 1;
+    pos->unit_at[move.target] = static_cast<std::uint8_t>(dropped);
+    (void)map;
 }
 
 } // namespace
@@ -239,6 +297,12 @@ void ApplyMove(const Map& map, Position* pos, const Move& move) {
     }
     case MoveKind::Join:
         Join(map, pos, move);
+        break;
+    case MoveKind::Load:
+        Load(map, pos, move);
+        break;
+    case MoveKind::Unload:
+        Unload(map, pos, move);
         break;
     case MoveKind::Wait:
     case MoveKind::Attack:

@@ -10,6 +10,15 @@ namespace shoal {
 constexpr int kMaxUnits = 128; // both sides together; unit_at holds indices below 0xff
 constexpr std::uint8_t kNoUnit = 0xff;
 constexpr int kCapturePoints = 20;
+constexpr int kMaxCargo = 2;
+
+// a unit riding in a transport; it has no tile of its own
+struct Cargo {
+    UnitType type = UnitType::Infantry;
+    std::uint8_t hp = 100;
+    std::uint8_t ammo = 0;
+    std::uint8_t pad = 0;
+};
 
 struct Unit {
     UnitType type = UnitType::Infantry;
@@ -18,7 +27,8 @@ struct Unit {
     std::uint8_t ammo = 0;
     std::uint16_t tile = 0;
     std::uint8_t done = 0; // acted this turn
-    std::uint8_t pad = 0;
+    std::uint8_t cargo_count = 0;
+    Cargo cargo[kMaxCargo];
 };
 
 inline int DisplayHp(int hp) {
@@ -52,7 +62,9 @@ enum class MoveKind : std::uint8_t {
     Attack,
     Capture,
     Build,
-    Join, // move onto a hurt friendly unit of the same type and merge into it
+    Join,   // move onto a hurt friendly unit of the same type and merge into it
+    Load,   // move into a friendly transport on `to`
+    Unload, // the transport moves to `to` and drops cargo `slot` on `target`
 };
 
 // one unit action, or the end of the turn; units are named by the tile they start on
@@ -62,11 +74,12 @@ struct Move {
     std::uint16_t from = 0;
     std::uint16_t to = 0;
     std::uint16_t target = 0;
+    std::uint8_t slot = 0; // which cargo an unload drops
 };
 
 inline bool operator==(const Move& a, const Move& b) {
     return a.kind == b.kind && a.build == b.build && a.from == b.from && a.to == b.to &&
-           a.target == b.target;
+           a.target == b.target && a.slot == b.slot;
 }
 
 constexpr int kMaxMoves = 8192;
@@ -87,8 +100,11 @@ bool IsLegal(const Map& map, const Position& pos, const Move& move);
 // tiles a unit can end its move on (its own tile included); friends can be passed, enemies
 // block; returns the count
 int ReachableTiles(const Map& map, const Position& pos, const Unit& unit, int out[kMaxTiles]);
-// a unit may join `target`: same owner and type, a different unit, and target shows < 10 hp
+// a unit may join `target`: same owner and type, a different unit, target shows < 10 hp, and
+// neither carries anything
 bool CanJoin(const Unit& unit, const Unit& target);
+// a unit may load into `transport`: a friendly transport that carries its type and has room
+bool CanLoad(const Unit& unit, const Unit& transport);
 
 // damage percent a full attack would do; 0 when the attacker cannot hit the defender
 int AttackDamage(const Map& map, const Unit& attacker, const Unit& defender, int defender_tile);
@@ -100,7 +116,8 @@ std::uint64_t ComputeHash(const Map& map, const Position& pos);
 // one unit's share of the hash; the hash xors these with the board terms
 std::uint64_t UnitHashKey(const Unit& unit);
 
-// "a2 b2", "a2 b2 x c2", "a2 a2 cap", "a2 b2 join", "b1 build inf", "end"
+// "a2 b2", "a2 b2 x c2", "a2 a2 cap", "a2 b2 join", "a2 b2 load", "b2 c2 drop c3",
+// "b2 c2 drop c3 2" (second cargo), "b1 build inf", "end"
 std::string MoveText(const Map& map, const Move& move);
 bool ParseMoveText(const Map& map, std::string_view text, Move* move);
 

@@ -70,7 +70,8 @@ bool TryGenerate(const MapGenOptions& options, GenRng* rng, Map* map) {
     map->day_limit = options.day_limit;
     map->production = true;
     for (UnitType type : {UnitType::Infantry, UnitType::Mech, UnitType::Recon, UnitType::Tank,
-                          UnitType::MdTank, UnitType::Artillery, UnitType::AntiAir}) {
+                          UnitType::MdTank, UnitType::Neotank, UnitType::Artillery,
+                          UnitType::Rockets, UnitType::AntiAir, UnitType::Apc}) {
         map->buildable[static_cast<int>(type)] = true;
     }
     int n = map->width * map->height;

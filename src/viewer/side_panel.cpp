@@ -21,8 +21,12 @@ int ArmyValue(const Position& pos, int owner) {
     int value = 0;
     for (int i = 0; i < pos.unit_count; i++) {
         const Unit& unit = pos.units[i];
-        if (unit.owner == owner) {
-            value += Spec(unit.type).cost * DisplayHp(unit.hp) / 10;
+        if (unit.owner != owner) {
+            continue;
+        }
+        value += Spec(unit.type).cost * DisplayHp(unit.hp) / 10;
+        for (int c = 0; c < unit.cargo_count; c++) {
+            value += Spec(unit.cargo[c].type).cost * DisplayHp(unit.cargo[c].hp) / 10;
         }
     }
     return value;
@@ -59,6 +63,9 @@ void DrawPlayerCard(State* state, Rect card, int player, const Position& pos) {
                     Align::Right);
     int props = PropertyCount(pos, map, player);
     int units = UnitCount(pos, player);
+    for (int i = 0; i < pos.unit_count; i++) {
+        units += pos.units[i].owner == player ? pos.units[i].cargo_count : 0;
+    }
     std::string info = std::to_string(props) + (props == 1 ? " property   " : " properties   ") +
                        std::to_string(units) + (units == 1 ? " unit" : " units") + "   army " +
                        Thousands(ArmyValue(pos, player));
@@ -158,6 +165,14 @@ void DrawReport(State* state) {
     case MoveKind::Join:
         line = UnitName(r.mover) + " " + TileName(map, m.from) + " joins the one on " +
                TileName(map, m.to);
+        break;
+    case MoveKind::Load:
+        line = UnitName(r.mover) + " " + TileName(map, m.from) + " boards the transport on " +
+               TileName(map, m.to);
+        break;
+    case MoveKind::Unload:
+        line = UnitName(r.mover) + " " + TileName(map, m.from) + " to " + TileName(map, m.to) +
+               ", drops on " + TileName(map, m.target);
         break;
     case MoveKind::Wait:
     case MoveKind::Attack:

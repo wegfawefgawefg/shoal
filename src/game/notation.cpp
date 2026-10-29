@@ -41,7 +41,16 @@ std::uint64_t UnitHashKey(const Unit& unit) {
     key = key << 8 | unit.hp;
     key = key << 8 | unit.ammo;
     key = key << 8 | unit.done;
-    return Mix(key);
+    std::uint64_t hash = Mix(key);
+    for (int i = 0; i < unit.cargo_count; i++) {
+        const Cargo& cargo = unit.cargo[i];
+        std::uint64_t cargo_key = 6ull << 60 | static_cast<std::uint64_t>(i) << 40 |
+                                  static_cast<std::uint64_t>(unit.tile) << 24 |
+                                  static_cast<std::uint64_t>(cargo.type) << 16 |
+                                  static_cast<std::uint64_t>(cargo.hp) << 8 | cargo.ammo;
+        hash ^= Mix(cargo_key);
+    }
+    return hash;
 }
 
 std::uint64_t ComputeHash(const Map& map, const Position& pos) {
@@ -77,6 +86,16 @@ std::string MoveText(const Map& map, const Move& move) {
         return TileName(map, move.from) + " " + TileName(map, move.to) + " cap";
     case MoveKind::Join:
         return TileName(map, move.from) + " " + TileName(map, move.to) + " join";
+    case MoveKind::Load:
+        return TileName(map, move.from) + " " + TileName(map, move.to) + " load";
+    case MoveKind::Unload: {
+        std::string text = TileName(map, move.from) + " " + TileName(map, move.to) + " drop " +
+                           TileName(map, move.target);
+        if (move.slot > 0) {
+            text += " " + std::to_string(move.slot + 1);
+        }
+        return text;
+    }
     }
     return "?";
 }
@@ -120,6 +139,23 @@ bool ParseMoveText(const Map& map, std::string_view text, Move* move) {
     }
     if (words.size() == 3 && words[2] == "join") {
         move->kind = MoveKind::Join;
+        return true;
+    }
+    if (words.size() == 3 && words[2] == "load") {
+        move->kind = MoveKind::Load;
+        return true;
+    }
+    int drop = 0;
+    if ((words.size() == 4 || words.size() == 5) && words[2] == "drop" &&
+        ParseTileName(map, words[3], &drop)) {
+        move->kind = MoveKind::Unload;
+        move->target = static_cast<std::uint16_t>(drop);
+        if (words.size() == 5) {
+            if (words[4] != "1" && words[4] != "2") {
+                return false;
+            }
+            move->slot = static_cast<std::uint8_t>(words[4][0] - '1');
+        }
         return true;
     }
     int target = 0;

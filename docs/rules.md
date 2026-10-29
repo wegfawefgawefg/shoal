@@ -8,7 +8,7 @@ terrain.php), read 2026-10-28.
 
 Infantry, Mech, Recon, Tank, Md.Tank, Neotank, Artillery, Rockets, Anti-Air, Missiles, APC
 are in the tables (`src/rules/units.cpp`). Missiles only hit air, so on ground maps they are
-targets. APC has no transport rules yet (no load/unload, no resupply).
+targets. APC carries foot soldiers (below).
 
 Primary weapons spend ammo; machine guns never run out. A unit uses its primary weapon when
 it can hit the target and has ammo, otherwise its machine gun.
@@ -43,6 +43,12 @@ Join: a unit may move onto a friendly unit of the same type that shows less than
 points add (internal, capped at 100); board hp past 10 are refunded at a tenth of the unit's
 cost each; ammo adds up to full. The merged unit has acted and keeps a capture in progress.
 
+Transports: an APC carries one infantry or mech. A unit loads by moving onto the APC; an APC
+that has not acted can still move after a unit loads. Unloading: the APC moves (or stays),
+then drops its cargo on a free neighbouring tile the cargo can stand on; both have acted.
+Cargo is lost with its transport. At the start of its side's turn an APC refills the ammo of
+its side's units next to it. (No "supply" command, no fuel yet.)
+
 Capture: properties have 20 capture points; capturing removes the capturer's board hp.
 Leaving the tile or dying resets the count.
 
@@ -53,4 +59,4 @@ Leaving the tile or dying resets the count.
 - At the end of player 1's turn on the day limit, the player with more properties wins;
   equal is a draw. This is AWBW's days-limit rule.
 
-Not yet in: APC load/unload and supply, fuel, air and sea units, fog.
+Not yet in: fuel, air and sea units (and their transports), fog.

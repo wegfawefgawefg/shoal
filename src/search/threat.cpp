@@ -96,7 +96,12 @@ int Exposure(const Map& map, const Position& pos, const ThreatMap& threats, cons
     if (loss > unit.hp) {
         loss = unit.hp;
     }
-    return Spec(unit.type).cost * loss / 100;
+    // a transport's cargo goes down with it
+    int worth = Spec(unit.type).cost;
+    for (int c = 0; c < unit.cargo_count; c++) {
+        worth += Spec(unit.cargo[c].type).cost * unit.cargo[c].hp / 100;
+    }
+    return worth * loss / 100;
 }
 
 } // namespace shoal

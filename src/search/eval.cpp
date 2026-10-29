@@ -35,6 +35,12 @@ int Evaluate(const Map& map, const Position& pos, int side, const EvalWeights& w
         const Unit& unit = pos.units[i];
         int worth = Spec(unit.type).cost * weights.unit_value[static_cast<int>(unit.type)] / 100;
         score[unit.owner] += worth * unit.hp / 100;
+        for (int c = 0; c < unit.cargo_count; c++) {
+            const Cargo& cargo = unit.cargo[c];
+            int cargo_worth =
+                Spec(cargo.type).cost * weights.unit_value[static_cast<int>(cargo.type)] / 100;
+            score[unit.owner] += cargo_worth * cargo.hp / 100;
+        }
     }
 
     // properties, and captures under way by their progress

@@ -43,12 +43,21 @@ const Unit* UnitOn(const Map& map, const Position& pos, const char* tile_name) {
     return &pos.units[pos.unit_at[tile]];
 }
 
+Unit MakeUnit(UnitType type, int owner, int hp, int ammo) {
+    Unit unit;
+    unit.type = type;
+    unit.owner = static_cast<std::uint8_t>(owner);
+    unit.hp = static_cast<std::uint8_t>(hp);
+    unit.ammo = static_cast<std::uint8_t>(ammo);
+    return unit;
+}
+
 void DamageTests(TestResults& r) {
     auto map = MapFrom(R"((map (tiles ".wc")))");
-    Unit inf{UnitType::Infantry, 0, 100, 0, 0, 0, 0};
-    Unit tank{UnitType::Tank, 1, 100, 9, 0, 0, 0};
-    Unit art{UnitType::Artillery, 0, 100, 9, 0, 0, 0};
-    Unit md{UnitType::MdTank, 0, 100, 8, 0, 0, 0};
+    Unit inf = MakeUnit(UnitType::Infantry, 0, 100, 0);
+    Unit tank = MakeUnit(UnitType::Tank, 1, 100, 9);
+    Unit art = MakeUnit(UnitType::Artillery, 0, 100, 9);
+    Unit md = MakeUnit(UnitType::MdTank, 0, 100, 8);
     CHECK(r, AttackDamage(*map, inf, inf, 0) == 49);  // 55 * 0.9
     CHECK(r, AttackDamage(*map, tank, inf, 1) == 60); // machine gun into wood
     CHECK(r, AttackDamage(*map, art, tank, 0) == 63);
@@ -175,10 +184,49 @@ void JoinTests(TestResults& r) {
     CHECK(r, pos.funds[0] == funds + 400);
 }
 
+void TransportTests(TestResults& r) {
+    auto map = MapFrom(R"((map (tiles "....." "....." "~....") (unit 0 inf a1) (unit 0 apc b1)
+                           (unit 0 tank c2) (unit 1 inf e3)))");
+    Position pos;
+    SetupStart(*map, &pos);
+    CHECK(r, IsLegal(*map, pos, M(*map, "a1 b1 load")));
+    CHECK(r, !IsLegal(*map, pos, M(*map, "c2 b1 load"))); // apcs carry foot soldiers only
+    CHECK(r, Play(*map, &pos, "a1 b1 load"));
+    const Unit* apc = UnitOn(*map, pos, "b1");
+    CHECK(r, apc != nullptr && apc->cargo_count == 1 && apc->done == 0);
+    CHECK(r, UnitOn(*map, pos, "a1") == nullptr);
+    // the transport can still move and drop in the same turn; the dropped unit has acted
+    CHECK(r, IsLegal(*map, pos, M(*map, "b1 d1 drop d2")));
+    CHECK(r, Play(*map, &pos, "b1 d1 drop d2"));
+    const Unit* dropped = UnitOn(*map, pos, "d2");
+    CHECK(r, dropped != nullptr && dropped->type == UnitType::Infantry && dropped->done == 1);
+    CHECK(r, UnitOn(*map, pos, "d1") != nullptr && UnitOn(*map, pos, "d1")->cargo_count == 0);
+
+    // an apc refills the ammo of units next to it when its side's turn starts
+    auto supply = MapFrom(R"((map (tiles "...") (unit 0 apc a1) (unit 0 tank b1)
+                              (unit 1 inf c1)))");
+    SetupStart(*supply, &pos);
+    pos.units[pos.unit_at[1]].ammo = 0;
+    CHECK(r, Play(*supply, &pos, "end"));
+    CHECK(r, Play(*supply, &pos, "end"));
+    CHECK(r, UnitOn(*supply, pos, "b1")->ammo == 9);
+
+    // a destroyed transport takes its cargo with it, and the game sees it in the hash
+    auto loaded = MapFrom(R"((map (tiles "...") (unit 0 inf a1) (unit 0 apc b1) (unit 1 md c1)))");
+    SetupStart(*loaded, &pos);
+    std::uint64_t before = pos.hash;
+    CHECK(r, Play(*loaded, &pos, "a1 b1 load"));
+    CHECK(r, pos.hash != before && pos.hash == ComputeHash(*loaded, pos));
+    CHECK(r, Play(*loaded, &pos, "end"));
+    CHECK(r, Play(*loaded, &pos, "c1 c1 x b1"));
+    CHECK(r, pos.result == Result::Ongoing || pos.result == Result::Win1);
+}
+
 } // namespace
 
 void RunRulesTests(TestResults& results) {
     JoinTests(results);
+    TransportTests(results);
     DamageTests(results);
     MoveGenTests(results);
     CombatTests(results);

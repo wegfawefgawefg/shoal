@@ -241,6 +241,22 @@ int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit)
         fight = FighterPlacement(ctx, pos, unit);
     }
     score += fight;
+    // cargo is placed where its transport stands
+    for (int c = 0; c < unit.cargo_count; c++) {
+        Unit rider;
+        rider.type = unit.cargo[c].type;
+        rider.owner = unit.owner;
+        rider.hp = unit.cargo[c].hp;
+        rider.tile = unit.tile;
+        int rider_type = static_cast<int>(rider.type);
+        if (Spec(rider.type).can_capture) {
+            std::int32_t& capture = ctx.capture_cache[rider_type][unit.tile];
+            if (capture == kUnfilled) {
+                capture = CapturerPlacement(ctx, pos, rider);
+            }
+            score += capture;
+        }
+    }
     if (map.production && map.tiles[unit.tile] == Terrain::Base) {
         score -= ctx.weights.base_block; // standing on our base blocks next turn's build
     }
