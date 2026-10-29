@@ -1,5 +1,6 @@
 #include "layout.hpp"
 
+#include "analysis_view.hpp"
 #include "replay.hpp"
 
 #include <algorithm>
@@ -36,16 +37,26 @@ void ComputeLayout(State* state, float width, float height) {
     float pad = Ui(*state, 16);
     float header_h = Ui(*state, 168);
     float report_h = Ui(*state, 64);
+    float engine_h = Ui(*state, 92);
+    float graph_h = HasAnalysis(*state) || HasEvals(*state) ? Ui(*state, 80) : 0;
     float footer_h = Ui(*state, 44);
-    l.header = Rect{l.panel.x + pad, pad, panel_w - 2 * pad, header_h};
-    l.report = Rect{l.panel.x + pad, l.header.y + header_h, panel_w - 2 * pad, report_h};
-    l.footer = Rect{l.panel.x + pad, height - footer_h, panel_w - 2 * pad, footer_h - pad * 0.5f};
-    float list_y = l.report.y + report_h + Ui(*state, 8);
+    float inner_w = panel_w - 2 * pad;
+    l.header = Rect{l.panel.x + pad, pad, inner_w, header_h};
+    l.report = Rect{l.panel.x + pad, l.header.y + header_h, inner_w, report_h};
+    l.engine = Rect{l.panel.x + pad, l.report.y + report_h, inner_w, engine_h};
+    l.graph = Rect{};
+    float list_y = l.engine.y + engine_h + Ui(*state, 8);
+    if (graph_h > 0) {
+        l.graph = Rect{l.panel.x + pad, l.engine.y + engine_h, inner_w, graph_h};
+        list_y = l.graph.y + graph_h + Ui(*state, 10);
+    }
+    l.footer = Rect{l.panel.x + pad, height - footer_h, inner_w, footer_h - pad * 0.5f};
     l.move_list = Rect{l.panel.x + pad, list_y, panel_w - 2 * pad,
                        std::max(0.0f, l.footer.y - list_y - Ui(*state, 8))};
 
     // board: as big as fits, whole pixels per tile, centred in what is left
-    float bar = HasEvals(*state) ? Ui(*state, kEvalBarWidth) + Ui(*state, kEvalBarGap) : 0;
+    // the bar stays even without evals: live analysis (A) fills it
+    float bar = Ui(*state, kEvalBarWidth) + Ui(*state, kEvalBarGap);
     float label = Ui(*state, kLabelSpace);
     float left = pad + bar + label;
     float top = pad + label;
@@ -62,10 +73,7 @@ void ComputeLayout(State* state, float width, float height) {
     float board_h = tile * static_cast<float>(map.height);
     l.board = Rect{std::floor(left + (avail_w - board_w) * 0.5f),
                    std::floor(top + (avail_h - board_h) * 0.5f), board_w, board_h};
-    l.eval_bar = Rect{};
-    if (bar > 0) {
-        l.eval_bar = Rect{l.board.x - label - bar, l.board.y, Ui(*state, kEvalBarWidth), board_h};
-    }
+    l.eval_bar = Rect{l.board.x - label - bar, l.board.y, Ui(*state, kEvalBarWidth), board_h};
 }
 
 int TileAtPoint(const State& state, float x, float y) {

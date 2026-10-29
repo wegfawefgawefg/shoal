@@ -1,6 +1,8 @@
 #include "input.hpp"
 
+#include "analysis_panel.hpp"
 #include "layout.hpp"
+#include "live_analysis.hpp"
 #include "play_mode.hpp"
 #include "replay.hpp"
 #include "side_panel.hpp"
@@ -62,6 +64,12 @@ void HandleKey(State* state, SDL_Keycode key) {
     case SDLK_R:
         ReloadRecord(state);
         return;
+    case SDLK_A:
+        StartLiveAnalysis(state);
+        return;
+    case SDLK_B:
+        state->show_best = !state->show_best;
+        return;
     case SDLK_Q:
         state->running = false;
         return;
@@ -81,6 +89,11 @@ void HandleClick(State* state, float x, float y, Uint8 button) {
     int row = MoveRowAt(*state, x, y);
     if (row >= 0) {
         SetPly(state, RowPly(*state, row));
+        return;
+    }
+    int graph_ply = GraphPlyAt(*state, x, y);
+    if (graph_ply >= 0) {
+        StepTo(state, graph_ply);
         return;
     }
     if (state->mode == Mode::Play) {

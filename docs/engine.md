@@ -36,6 +36,22 @@ Searches whole turns.
   two turns at a time until the clock runs out.
 - Weights (`PlanWeights`) are tunable: `plan:w.exposure=80`, and `shoal tune` runs SPSA.
 
+## Analysis (`src/search/analysis.cpp`, `shoal analyse`)
+
+PlanTurn's score always ends on the other side's reply (odd turn depths), so it leans against
+the side to move; on the crossing planner game the two sides' turn starts are each ~8k below
+zero. `AnalysePosition` therefore runs two searches: PlanTurn from the position (root), and
+PlanTurn for the other side after the engine's best turn (follow, negated: one turn deeper,
+our side moves last). The shown score is their mean, so turn starts of both sides line up on
+one graph.
+
+A played turn is judged at the follow depth: best = follow score, played = minus the next turn
+start's root score (the same search from the position the played turn left), loss = best -
+played, floored at 0. When the played turn ends where the engine's best ends, the loss is 0.
+Marks: inaccuracy >= 1500, mistake >= 4000, blunder >= 8000, or not-lost becomes lost. The
+plain "score here minus minus the next score" would mix the two parities and read ~-17k for
+every turn of the planner's own game.
+
 ## Tools
 
 - `shoal match --a ENGINE --b ENGINE --gen SIZE COUNT`: both colours on each map, Elo.

@@ -26,7 +26,8 @@ void TintTile(const Canvas& canvas, int tile, Color color) {
     FillRect(canvas.renderer, f.R(0, 0, 1, 1), color);
 }
 
-// the walked path as a band with an arrow head stopping short of the destination centre
+} // namespace
+
 void DrawPathArrow(const Canvas& canvas, const std::vector<int>& path, Color fill) {
     if (path.size() < 2) {
         return;
@@ -65,6 +66,8 @@ void DrawPathArrow(const Canvas& canvas, const std::vector<int>& path, Color fil
         }
     }
 }
+
+namespace {
 
 void DrawReticle(const Canvas& canvas, int tile) {
     Vec2 c = TileCentre(canvas, tile);

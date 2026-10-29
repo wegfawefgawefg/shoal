@@ -3,6 +3,7 @@
 #include "board_draw.hpp"
 #include "input.hpp"
 #include "layout.hpp"
+#include "live_analysis.hpp"
 #include "palette.hpp"
 #include "play_mode.hpp"
 #include "replay.hpp"
@@ -162,6 +163,11 @@ int RunScreenshot(State* state, const Options& options) {
         LayOut(state);
         DrawFrame(state);
     }
+    // a live analysis (A) finishes before the shot, so the shot shows its result
+    if (LiveAnalysisRunning(*state)) {
+        WaitLiveAnalysis(state);
+        LayOut(state);
+    }
     DrawFrame(state);
     SDL_Surface* pixels = SDL_RenderReadPixels(state->renderer, nullptr);
     bool ok = pixels && SDL_SaveBMP(pixels, options.screenshot.c_str());
@@ -199,14 +205,18 @@ int RunWindow(State* state, const Options& options) {
     ApplySelectOptions(state, options);
 
     while (state->running) {
-        // pump input: sleep until something happens, then drain the queue
+        // pump input: sleep until something happens, then drain the queue; while the engine
+        // thinks, wake often enough to pick up its answer
         SDL_Event event;
-        if (SDL_WaitEventTimeout(&event, 500)) {
+        int wait_ms = LiveAnalysisRunning(*state) ? 50 : 500;
+        if (SDL_WaitEventTimeout(&event, wait_ms)) {
             HandleEvent(state, &event);
             while (SDL_PollEvent(&event)) {
                 HandleEvent(state, &event);
             }
         }
+
+        PollLiveAnalysis(state);
 
         // lay out for the current window size
         LayOut(state);
@@ -216,6 +226,7 @@ int RunWindow(State* state, const Options& options) {
         SDL_RenderPresent(state->renderer);
     }
 
+    WaitLiveAnalysis(state);
     if (state->board_texture) {
         SDL_DestroyTexture(state->board_texture);
     }

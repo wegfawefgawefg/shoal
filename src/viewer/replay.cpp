@@ -1,5 +1,7 @@
 #include "replay.hpp"
 
+#include "analysis_view.hpp"
+
 #include <queue>
 
 namespace shoal {
@@ -168,6 +170,7 @@ void PlayMove(State* state, const Move& move) {
     if (state->edited_from < 0 || state->edited_from > state->ply) {
         state->edited_from = state->ply;
     }
+    TrimAnalysis(state, state->ply);
     state->game.moves.resize(ply);
     if (state->game.evals.size() > ply) {
         state->game.evals.resize(ply);

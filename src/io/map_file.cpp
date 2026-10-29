@@ -1,9 +1,8 @@
 #include "io/map_file.hpp"
 
-#include <gsexp/sexp.hpp>
-
 #include <charconv>
 #include <fstream>
+#include <gsexp/sexp.hpp>
 #include <sstream>
 
 namespace shoal {
@@ -226,7 +225,80 @@ void WriteMapForm(const Map& map, std::ostringstream& out, const char* indent) {
     out << indent << ")";
 }
 
+struct MarkName {
+    TurnMark mark;
+    const char* name;
+    const char* symbol;
+};
+
+constexpr MarkName kMarkNames[] = {
+    {TurnMark::None, "none", ""},
+    {TurnMark::Inaccuracy, "inaccuracy", "?!"},
+    {TurnMark::Mistake, "mistake", "?"},
+    {TurnMark::Blunder, "blunder", "??"},
+};
+
+// (turn PLY SCORE LOSS MARK "moves, ..."); the best turn must be legal from its ply
+bool ReadTurnAnalysis(gsexp::Node form, const Map& map, const std::vector<Position>& positions,
+                      TurnAnalysis* turn, std::string* error) {
+    if (form.child_count() != 6 || !ParseInt(form.child_at(1), &turn->ply) ||
+        !ParseInt(form.child_at(2), &turn->score) || !ParseInt(form.child_at(3), &turn->loss) ||
+        !TurnMarkFromName(form.child_at(4).text(), &turn->mark) || !form.child_at(5).is_string()) {
+        return Fail(error, "analysis wants (turn ply score loss mark \"moves\")");
+    }
+    if (turn->ply < 0 || turn->ply >= static_cast<int>(positions.size())) {
+        return Fail(error, "analysis ply " + std::to_string(turn->ply) + " is past the moves");
+    }
+    Position pos = positions[static_cast<std::size_t>(turn->ply)];
+    std::string_view text = form.child_at(5).text();
+    while (!text.empty()) {
+        std::size_t comma = text.find(',');
+        std::string_view part = text.substr(0, comma);
+        text = comma == std::string_view::npos ? std::string_view() : text.substr(comma + 1);
+        while (!part.empty() && part.front() == ' ') {
+            part.remove_prefix(1);
+        }
+        Move move;
+        if (!ParseMoveText(map, part, &move) || !IsLegal(map, pos, move)) {
+            return Fail(error, "analysis at ply " + std::to_string(turn->ply) + ": bad move " +
+                                   std::string(part));
+        }
+        ApplyMove(map, &pos, move);
+        turn->best.push_back(move);
+    }
+    return true;
+}
+
 } // namespace
+
+const char* TurnMarkName(TurnMark mark) {
+    return kMarkNames[static_cast<int>(mark)].name;
+}
+
+const char* TurnMarkSymbol(TurnMark mark) {
+    return kMarkNames[static_cast<int>(mark)].symbol;
+}
+
+bool TurnMarkFromName(std::string_view name, TurnMark* mark) {
+    for (const MarkName& entry : kMarkNames) {
+        if (name == entry.name) {
+            *mark = entry.mark;
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string TurnMovesText(const Map& map, const std::vector<Move>& moves) {
+    std::string text;
+    for (const Move& move : moves) {
+        if (!text.empty()) {
+            text += ", ";
+        }
+        text += MoveText(map, move);
+    }
+    return text;
+}
 
 bool ReadWholeFile(const std::string& path, std::string* out) {
     std::ifstream file(path, std::ios::binary);
@@ -254,8 +326,8 @@ bool LoadMapText(std::string_view text, Map* map, std::string* error) {
         std::string message = "parse error";
         if (!parsed.diagnostics.empty()) {
             const gsexp::Diagnostic& d = parsed.diagnostics[0];
-            message += " at " + std::to_string(d.line) + ":" + std::to_string(d.column) + ": " +
-                       d.message;
+            message +=
+                " at " + std::to_string(d.line) + ":" + std::to_string(d.column) + ": " + d.message;
         }
         return Fail(error, message);
     }
@@ -292,9 +364,11 @@ bool LoadGameText(std::string_view text, GameRecord* game, std::string* error) {
     }
     game->moves.clear();
     game->evals.clear();
+    game->analysis.clear();
     // replay as we read so a bad move is caught at its index
     Position pos;
     SetupStart(game->map, &pos);
+    std::vector<Position> positions{pos};
     gsexp::Node moves = view.find("moves");
     if (moves.valid()) {
         for (std::size_t i = 1; i < moves.child_count(); i++) {
@@ -305,11 +379,12 @@ bool LoadGameText(std::string_view text, GameRecord* game, std::string* error) {
                                        std::string(move_text));
             }
             if (!IsLegal(game->map, pos, move)) {
-                return Fail(error, "illegal move " + std::to_string(i) + ": " +
-                                       std::string(move_text));
+                return Fail(error,
+                            "illegal move " + std::to_string(i) + ": " + std::string(move_text));
             }
             ApplyMove(game->map, &pos, move);
             game->moves.push_back(move);
+            positions.push_back(pos);
         }
     }
     gsexp::Node evals = view.find("evals");
@@ -320,6 +395,20 @@ bool LoadGameText(std::string_view text, GameRecord* game, std::string* error) {
                 return Fail(error, "evals must be numbers");
             }
             game->evals.push_back(eval);
+        }
+    }
+    gsexp::Node analysis = view.find("analysis");
+    if (analysis.valid()) {
+        for (std::size_t i = 1; i < analysis.child_count(); i++) {
+            gsexp::Node form = analysis.child_at(i);
+            if (!form.is_list() || form.child_count() == 0 || !form.head().is_atom("turn")) {
+                return Fail(error, "analysis holds (turn ...) forms");
+            }
+            TurnAnalysis turn;
+            if (!ReadTurnAnalysis(form, game->map, positions, &turn, error)) {
+                return false;
+            }
+            game->analysis.push_back(std::move(turn));
         }
     }
     return true;
@@ -346,6 +435,15 @@ std::string WriteGameText(const GameRecord& game) {
         out << "\n  (evals";
         for (int eval : game.evals) {
             out << " " << eval;
+        }
+        out << ")";
+    }
+    if (!game.analysis.empty()) {
+        out << "\n  (analysis";
+        for (const TurnAnalysis& turn : game.analysis) {
+            out << "\n    (turn " << turn.ply << " " << turn.score << " " << turn.loss << " "
+                << TurnMarkName(turn.mark) << " "
+                << gsexp::quote_string(TurnMovesText(game.map, turn.best)) << ")";
         }
         out << ")";
     }

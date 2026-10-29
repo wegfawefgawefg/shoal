@@ -19,6 +19,7 @@ void PrintUsage() {
                 "  shoal selfplay <map> [--time S] [--depth N] [--out game.sexp]\n"
                 "  shoal plan <map|game> [--time S] [--turns N] [--beam W]\n"
                 "  shoal planplay <map> [--time S] [--turns N] [--beam W] [--out game.sexp]\n"
+                "  shoal analyse <game> [--time S] [--threads N] [--out annotated.sexp]\n"
                 "  shoal match --a ENGINE --b ENGINE [maps...] [--gen SIZE COUNT] [--threads T]\n"
                 "  shoal genmap [--size N] [--seed S] [--days D] [--bases B]\n"
                 "  shoal tune [--rounds N] [--maps M] [--threads T] [--time S] [--rate R]\n"
@@ -56,6 +57,9 @@ int main(int argc, char** argv) {
     }
     if (command == "planplay") {
         return shoal::RunPlanPlay(argc - 2, argv + 2);
+    }
+    if (command == "analyse" || command == "analyze") {
+        return shoal::RunAnalyse(argc - 2, argv + 2);
     }
     if (command == "match") {
         return shoal::RunMatch(argc - 2, argv + 2);

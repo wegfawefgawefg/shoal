@@ -1,8 +1,11 @@
 #include "side_panel.hpp"
 
+#include "analysis_panel.hpp"
+#include "analysis_view.hpp"
 #include "layout.hpp"
 #include "palette.hpp"
 #include "replay.hpp"
+#include "search/eval.hpp"
 
 #include <cmath>
 #include <cstdlib>
@@ -11,8 +14,6 @@ namespace shoal {
 
 namespace {
 
-// scores at least this big are treated as a won or lost game
-constexpr int kDecisiveEval = 1000000;
 // eval at which the bar is about three quarters full
 constexpr float kEvalBarScale = 12000.0f;
 
@@ -112,7 +113,7 @@ void DrawHeader(State* state) {
         DrawText(&state->font, l.header.x, y, small, kTextDim, status);
     }
     int eval = 0;
-    if (EvalForPlayer0(*state, state->ply, &eval)) {
+    if (ShownEvalForPlayer0(*state, state->ply, &eval)) {
         DrawTextAligned(&state->font, l.header.x + l.header.w, y, small, kText,
                         "eval " + FormatEval(eval), Align::Right);
     }
@@ -199,18 +200,18 @@ void DrawFooter(State* state) {
     DrawText(&state->font, l.footer.x, y, size, kTextFaint,
              "left right  move     up down  turn     home end");
     std::string second = state->mode == Mode::Play
-                             ? "P  replay   E  end turn   Esc  cancel   R  reload file"
-                             : "P  play from here     wheel  scroll moves";
+                             ? "P  replay   E  end turn   Esc  cancel   R  reload   A  analyse"
+                             : "P  play from here     A  analyse     B  best turn";
     DrawText(&state->font, l.footer.x, y + LineHeight(size), size, kTextFaint, second);
 }
 
 } // namespace
 
 std::string FormatEval(int eval) {
-    if (eval >= kDecisiveEval) {
+    if (eval > kWinThreshold) {
         return "+won";
     }
-    if (eval <= -kDecisiveEval) {
+    if (eval < -kWinThreshold) {
         return "-won";
     }
     std::string sign = eval > 0 ? "+" : eval < 0 ? "-" : "";
@@ -237,15 +238,15 @@ void DrawEvalBar(State* state) {
     }
     float radius = Ui(*state, 4);
     int eval = 0;
-    if (!EvalForPlayer0(*state, state->ply, &eval)) {
+    if (!ShownEvalForPlayer0(*state, state->ply, &eval)) {
         FillRoundRect(state->renderer, bar, radius, kPanelRaised);
         FillRect(state->renderer, Rect{bar.x, bar.y + bar.h * 0.5f - 1, bar.w, 2}, kPanelLine);
         return;
     }
     float share = 0.5f + 0.5f * std::tanh(static_cast<float>(eval) / kEvalBarScale);
-    if (eval >= kDecisiveEval) {
+    if (eval > kWinThreshold) {
         share = 1;
-    } else if (eval <= -kDecisiveEval) {
+    } else if (eval < -kWinThreshold) {
         share = 0;
     }
     // player 1 from the top, player 0 from the bottom, like the board's two halves
@@ -267,6 +268,8 @@ void DrawSidePanel(State* state) {
     FillRect(state->renderer, Rect{l.panel.x, 0, 1, l.height}, kPanelLine);
     DrawHeader(state);
     DrawReport(state);
+    DrawEnginePanel(state);
+    DrawEvalGraph(state);
     DrawMoveList(state);
     DrawFooter(state);
 }
