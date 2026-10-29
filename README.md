@@ -23,6 +23,24 @@ cmake --preset release && cmake --build --preset release
 ./build/shoal perft maps/tiny/hq5.sexp 5
 ```
 
+## Engine
+
+Two searches (`docs/engine.md`): an exact alpha-beta solver over single unit actions for tiny
+maps, and a turn planner (beam-built candidate turns, negamax over whole turns, tuned eval)
+for real maps up to 32x32.
+
+```
+./build/shoal search maps/tiny/twoinf5.sexp --solve --out line.sexp   # perfect play
+./build/shoal plan maps/mini8.sexp --time 2 --threads 8                # best turn
+./build/shoal planplay maps/gen16-7.sexp --time 1 --out game.sexp      # self-play
+./build/shoal match --a plan:t=0.5 --b plan:t=0.5:beam=8 --gen 12 16    # engine vs engine
+./build/shoal tune --threads 10                                         # SPSA on the eval
+./build/shoal stats out/games/                                          # builds and trades
+```
+
+What it has found so far is in `docs/findings.md`; solved perfect-play lines in
+`games/solved/`.
+
 ## Viewer
 
 `shoal_viewer` (SDL3, built when CMake finds it) replays a game record or opens a map:
