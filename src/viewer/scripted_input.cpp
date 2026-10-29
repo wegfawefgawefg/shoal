@@ -30,7 +30,7 @@ bool KeyFor(const std::string& name, SDL_Keycode* key) {
                           {"down", SDLK_DOWN}, {"home", SDLK_HOME},   {"end", SDLK_END},
                           {"p", SDLK_P},       {"e", SDLK_E},         {"esc", SDLK_ESCAPE},
                           {"r", SDLK_R},       {"a", SDLK_A},         {"b", SDLK_B},
-                          {"o", SDLK_O}};
+                          {"o", SDLK_O},       {"s", SDLK_S}};
     for (const Named& named : keys) {
         if (name == named.name) {
             *key = named.key;

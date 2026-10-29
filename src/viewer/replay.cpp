@@ -2,6 +2,7 @@
 
 #include "analysis_view.hpp"
 
+#include <filesystem>
 #include <queue>
 
 namespace shoal {
@@ -163,6 +164,25 @@ bool EvalForPlayer0(const State& state, int ply, int* eval) {
     // evals are from the view of the side that made the move
     *eval = state.positions[i].side == 0 ? value : -value;
     return true;
+}
+
+std::string SaveLine(State* state) {
+    std::filesystem::path source = state->path;
+    std::filesystem::path dir = source.parent_path();
+    std::string stem = source.stem().string();
+    std::filesystem::path out = dir / (stem + "-line.sexp");
+    for (int n = 2; std::filesystem::exists(out); n++) {
+        out = dir / (stem + "-line" + std::to_string(n) + ".sexp");
+    }
+    // evals that no longer match the moves are dropped rather than written half
+    GameRecord record = state->game;
+    if (record.evals.size() != record.moves.size()) {
+        record.evals.clear();
+    }
+    if (!WriteWholeFile(out.string(), WriteGameText(record))) {
+        return "";
+    }
+    return out.string();
 }
 
 void PlayMove(State* state, const Move& move) {

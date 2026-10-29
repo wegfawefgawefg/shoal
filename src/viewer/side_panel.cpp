@@ -225,7 +225,7 @@ void DrawFooter(State* state) {
     DrawText(&state->font, l.footer.x, y, size, kTextFaint,
              "left right  move     up down  turn     home end");
     std::string second = state->mode == Mode::Play
-                             ? "P  replay   E  end turn   O  engine opponent   Esc  cancel   R  reload   A  analyse"
+                             ? "P  replay   E  end turn   O  engine opponent   S  save line   R  reload   A  analyse"
                              : "P  play from here     A  analyse     B  best turn";
     DrawText(&state->font, l.footer.x, y + LineHeight(size), size, kTextFaint, second);
 }

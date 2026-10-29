@@ -4,6 +4,8 @@
 #include "layout.hpp"
 #include "engine_opponent.hpp"
 #include "live_analysis.hpp"
+
+#include <cstdio>
 #include "play_mode.hpp"
 #include "replay.hpp"
 #include "side_panel.hpp"
@@ -74,6 +76,11 @@ void HandleKey(State* state, SDL_Keycode key) {
     case SDLK_O:
         ToggleEngineOpponent(state);
         return;
+    case SDLK_S: {
+        std::string saved = SaveLine(state);
+        std::printf("%s\n", saved.empty() ? "could not save the line" : saved.c_str());
+        return;
+    }
     case SDLK_Q:
         state->running = false;
         return;

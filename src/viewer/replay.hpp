@@ -25,6 +25,10 @@ int PrevTurnPly(const State& state, int ply);
 bool EvalForPlayer0(const State& state, int ply, int* eval);
 bool HasEvals(const State& state);
 
+// writes the whole current line (hand-played moves included) next to the file it came from as
+// <name>-line.sexp, or -line2, -line3... if that exists; returns the path or "" on failure
+std::string SaveLine(State* state);
+
 // replaces the moves from the current ply on with one new move (play mode)
 void PlayMove(State* state, const Move& move);
 
