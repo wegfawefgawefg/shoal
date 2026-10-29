@@ -121,7 +121,8 @@ TurnPlan GreedyTurn(Planner* planner, const Position& pos) {
 
 std::vector<TurnPlan> BeamTurns(Planner* planner, const Position& pos, int width) {
     const Map& map = *planner->map;
-    auto ctx = std::make_unique<PlanContext>();
+    // for_overwrite: no zeroing of the big caches, PlanBegin clears what gets used
+    auto ctx = std::make_unique_for_overwrite<PlanContext>();
     PlanBegin(ctx.get(), map, planner->distances, planner->weights, pos);
     auto list = std::make_unique<MoveList>();
 

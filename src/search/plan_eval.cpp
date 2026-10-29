@@ -305,13 +305,8 @@ void PlanBegin(PlanContext* ctx, const Map& map, const DistanceTable& distances,
     ctx->distances = &distances;
     ctx->side = pos.side;
     BuildThreats(map, pos, pos.side ^ 1, &ctx->threats);
-    int tile_count = map.width * map.height;
     for (int type = 0; type < kUnitTypeCount; type++) {
-        for (int tile = 0; tile < tile_count; tile++) {
-            ctx->capture_cache[type][tile] = kUnfilled;
-            ctx->fight_cache[type][tile] = kUnfilled;
-            ctx->ride_cache[type][tile] = kUnfilled;
-        }
+        ctx->cache_ready[type] = false;
     }
     for (int t = 0; t < kTerrainCount; t++) {
         ctx->blocks_build[t] = false;
@@ -324,8 +319,27 @@ void PlanBegin(PlanContext* ctx, const Map& map, const DistanceTable& distances,
     }
 }
 
+namespace {
+
+// clears a type's placement caches the first time this turn the type is scored
+void PrepareType(const PlanContext& ctx, int type) {
+    if (ctx.cache_ready[type]) {
+        return;
+    }
+    ctx.cache_ready[type] = true;
+    int tile_count = ctx.map->width * ctx.map->height;
+    for (int tile = 0; tile < tile_count; tile++) {
+        ctx.capture_cache[type][tile] = kUnfilled;
+        ctx.fight_cache[type][tile] = kUnfilled;
+        ctx.ride_cache[type][tile] = kUnfilled;
+    }
+}
+
+} // namespace
+
 int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit) {
     const Map& map = *ctx.map;
+    PrepareType(ctx, static_cast<int>(unit.type));
     int score = -Exposure(map, pos, ctx.threats, unit, unit.tile, ctx.weights.second_hit) *
                 ctx.weights.exposure / 100;
     int prop = map.property_at[unit.tile];
@@ -343,9 +357,11 @@ int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit)
         fight = FighterPlacement(ctx, pos, unit);
     }
     score += fight;
-    score -= FuelRisk(ctx, pos, unit);
+    if (Spec(unit.type).fuel_per_day > 0) {
+        score -= FuelRisk(ctx, pos, unit);
+    }
     // cargo is placed where its transport stands; air and sea transports carry it on
-    bool carried = DomainOf(unit.type) != Domain::Ground;
+    bool carried = unit.cargo_count > 0 && DomainOf(unit.type) != Domain::Ground;
     for (int c = 0; c < unit.cargo_count; c++) {
         Unit rider;
         rider.type = unit.cargo[c].type;
@@ -353,6 +369,7 @@ int PlanUnitTerms(const PlanContext& ctx, const Position& pos, const Unit& unit)
         rider.hp = unit.cargo[c].hp;
         rider.tile = unit.tile;
         int rider_type = static_cast<int>(rider.type);
+        PrepareType(ctx, rider_type);
         if (Spec(rider.type).can_capture && carried) {
             std::int32_t& ride = ctx.ride_cache[type][unit.tile];
             if (ride == kUnfilled) {

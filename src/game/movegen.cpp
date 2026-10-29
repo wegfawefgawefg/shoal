@@ -104,21 +104,6 @@ int PathPoints(const Map& map, const Position& pos, const Unit& unit, int to) {
     return left[to] < 0 ? -1 : StartPoints(unit) - left[to];
 }
 
-int MovePoints(const Map& map, const Position& pos, const Move& move) {
-    if (move.points != kUnknownPoints) {
-        return move.points;
-    }
-    if (move.from == move.to) {
-        return 0;
-    }
-    std::uint8_t index = pos.unit_at[move.from];
-    if (index == kNoUnit) {
-        return 0;
-    }
-    int points = PathPoints(map, pos, pos.units[index], move.to);
-    return points < 0 ? 0 : points;
-}
-
 bool CanJoin(const Unit& unit, const Unit& target) {
     return target.owner == unit.owner && target.type == unit.type && target.tile != unit.tile &&
            DisplayHp(target.hp) < 10 && unit.cargo_count == 0 && target.cargo_count == 0;
@@ -135,16 +120,6 @@ int ReachableTiles(const Map& map, const Position& pos, const Unit& unit, int ou
     return Reach(map, pos, unit, out, nullptr, left);
 }
 
-bool CanHit(const Unit& attacker, const Unit& defender) {
-    if (defender.dived && !HitsDived(attacker.type)) {
-        return false;
-    }
-    if (PrimaryDamage(attacker.type, defender.type) > 0 && attacker.ammo > 0) {
-        return true;
-    }
-    return SecondaryDamage(attacker.type, defender.type) > 0;
-}
-
 namespace {
 
 void Push(MoveList* list, MoveKind kind, int from, int to, int target, int points) {
@@ -158,7 +133,7 @@ void Push(MoveList* list, MoveKind kind, int from, int to, int target, int point
     move.to = static_cast<std::uint16_t>(to);
     move.target = static_cast<std::uint16_t>(target);
     move.slot = 0;
-    move.points = static_cast<std::uint8_t>(points);
+    move.points_plus_one = static_cast<std::uint8_t>(points + 1);
 }
 
 // a transport that ends on `dest` drops each cargo on a free neighbour it can stand on; the
@@ -259,7 +234,7 @@ void PushBuilds(const Map& map, const Position& pos, MoveList* list) {
             move.to = static_cast<std::uint16_t>(tile);
             move.target = static_cast<std::uint16_t>(tile);
             move.slot = 0;
-            move.points = 0;
+            move.points_plus_one = 1;
         }
     }
 }

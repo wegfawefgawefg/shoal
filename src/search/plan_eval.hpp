@@ -58,6 +58,7 @@ struct PlanContext {
     mutable std::int32_t fight_cache[kUnitTypeCount][kMaxTiles];
     // capture value of a foot soldier riding an air or sea transport, by transport type
     mutable std::int32_t ride_cache[kUnitTypeCount][kMaxTiles];
+    mutable bool cache_ready[kUnitTypeCount] = {}; // a type's rows are cleared on first use
     bool blocks_build[kTerrainCount] = {}; // a unit standing here blocks a build
 };
 

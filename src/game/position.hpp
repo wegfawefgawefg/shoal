@@ -79,9 +79,6 @@ enum class MoveKind : std::uint8_t {
     Surface, // a dived sub moves to `to` and comes up
 };
 
-// Move::points when the move did not come from GenerateMoves
-constexpr std::uint8_t kUnknownPoints = 0xff;
-
 // one unit action, or the end of the turn; units are named by the tile they start on
 struct Move {
     MoveKind kind = MoveKind::EndTurn;
@@ -90,12 +87,13 @@ struct Move {
     std::uint16_t to = 0;
     std::uint16_t target = 0;
     std::uint8_t slot = 0; // which cargo an unload drops
-    // move points (and fuel) the unit spends getting to `to`; GenerateMoves fills it, other
-    // moves leave kUnknownPoints and ApplyMove works it out. Not part of a move's identity
-    std::uint8_t points = kUnknownPoints;
+    // move points (and fuel) the unit spends getting to `to`, plus one; GenerateMoves fills
+    // it, other moves leave 0 (unknown: ApplyMove works it out). Zero by default so move
+    // lists clear with a memset. Not part of a move's identity
+    std::uint8_t points_plus_one = 0;
 };
 
-// a move with the same identity as `a`; ignores `points`
+// a move with the same identity as `a`; ignores `points_plus_one`
 inline bool operator==(const Move& a, const Move& b) {
     return a.kind == b.kind && a.build == b.build && a.from == b.from && a.to == b.to &&
            a.target == b.target && a.slot == b.slot;
@@ -122,8 +120,18 @@ int ReachableTiles(const Map& map, const Position& pos, const Unit& unit, int ou
 // move points a unit spends on its cheapest path to `to` (0 to stay), or -1 if it cannot get
 // there; the same limits as ReachableTiles
 int PathPoints(const Map& map, const Position& pos, const Unit& unit, int to);
-// the points a move spends: move.points when known, else PathPoints
-int MovePoints(const Map& map, const Position& pos, const Move& move);
+// the points a move spends: from the move when GenerateMoves made it, else PathPoints
+inline int MovePoints(const Map& map, const Position& pos, const Move& move) {
+    if (move.points_plus_one > 0) {
+        return move.points_plus_one - 1;
+    }
+    std::uint8_t index = pos.unit_at[move.from];
+    if (move.from == move.to || index == kNoUnit) {
+        return 0;
+    }
+    int points = PathPoints(map, pos, pos.units[index], move.to);
+    return points < 0 ? 0 : points;
+}
 // a unit may join `target`: same owner and type, a different unit, target shows < 10 hp, and
 // neither carries anything
 bool CanJoin(const Unit& unit, const Unit& target);
@@ -142,7 +150,15 @@ std::uint64_t UnitHashKey(const Unit& unit);
 
 // whether `attacker` can fire on `defender` at all now: a weapon that hits it with ammo to
 // spare, and a dived sub only by cruisers and subs
-bool CanHit(const Unit& attacker, const Unit& defender);
+inline bool CanHit(const Unit& attacker, const Unit& defender) {
+    if (defender.dived && !HitsDived(attacker.type)) {
+        return false;
+    }
+    if (PrimaryDamage(attacker.type, defender.type) > 0 && attacker.ammo > 0) {
+        return true;
+    }
+    return SecondaryDamage(attacker.type, defender.type) > 0;
+}
 
 // "a2 b2", "a2 b2 x c2", "a2 a2 cap", "a2 b2 join", "a2 b2 load", "b2 c2 drop c3",
 // "b2 c2 drop c3 2" (second cargo), "a1 b1 dive", "a1 b1 surface", "b1 build inf", "end"
