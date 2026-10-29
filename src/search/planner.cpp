@@ -3,6 +3,7 @@
 #include "search/eval.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <cstdio>
 #include <memory>
 #include <thread>
@@ -218,14 +219,16 @@ std::vector<TurnPlan> BeamTurns(Planner* planner, const Position& pos, int width
 
 namespace {
 
-// score of one root turn at a depth, from the mover's view, with a full window
-int RootScore(Planner* planner, const Position& pos, const TurnPlan& plan, int turns, int width) {
+// score of one root turn at a depth, from the mover's view; a turn that cannot beat `alpha`
+// may come back as any score at or below it
+int RootScore(Planner* planner, const Position& pos, const TurnPlan& plan, int turns, int width,
+              int alpha) {
     Position next = AfterEnd(*planner->map, plan.end);
     if (plan.end.result != Result::Ongoing || next.result != Result::Ongoing) {
         Result r = plan.end.result != Result::Ongoing ? plan.end.result : next.result;
         return ResultScore(r, pos.side);
     }
-    return -TurnNegamax(planner, next, turns - 1, width, -kInfinity, kInfinity);
+    return -TurnNegamax(planner, next, turns - 1, width, -kInfinity, -alpha);
 }
 
 // each thread deepens its share of the root turns; the answer is the best root at the deepest
@@ -241,6 +244,11 @@ PlannerResult PlanTurnThreaded(Planner* planner, const Position& pos, const Plan
         static_cast<std::size_t>(root_count),
         std::vector<int>(static_cast<std::size_t>(max_steps), kInfinity + 1));
     std::vector<std::uint64_t> plans(static_cast<std::size_t>(limits.threads), 0);
+    // the best root score found so far at each depth, shared so every thread can cut against it
+    std::vector<std::atomic<int>> best_at(static_cast<std::size_t>(max_steps));
+    for (std::atomic<int>& best : best_at) {
+        best = -kInfinity;
+    }
     int width = Narrower(*planner, limits.beam_width);
     auto worker = [&](int thread) {
         Planner local = *planner;
@@ -249,13 +257,17 @@ PlannerResult PlanTurnThreaded(Planner* planner, const Position& pos, const Plan
         local.stopped = false;
         for (int step = 0; step < max_steps; step++) {
             for (int i = thread; i < root_count; i += limits.threads) {
-                int score =
-                    RootScore(&local, pos, roots[static_cast<std::size_t>(i)], 2 * step + 1, width);
+                std::atomic<int>& best = best_at[static_cast<std::size_t>(step)];
+                int score = RootScore(&local, pos, roots[static_cast<std::size_t>(i)],
+                                      2 * step + 1, width, best.load());
                 if (local.stopped) {
                     plans[static_cast<std::size_t>(thread)] = local.plans;
                     return;
                 }
                 scores[static_cast<std::size_t>(i)][static_cast<std::size_t>(step)] = score;
+                int seen = best.load();
+                while (score > seen && !best.compare_exchange_weak(seen, score)) {
+                }
             }
         }
         plans[static_cast<std::size_t>(thread)] = local.plans;

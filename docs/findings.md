@@ -117,8 +117,12 @@ Turn depth = whole turns searched (ours, theirs, ...), deepened two at a time.
 
 | position | 1 s, 1 thread | 1 s, 8 threads | 5 s, 1 thread | 5 s, 8 threads |
 | --- | --- | --- | --- | --- |
-| 16x16 mid-game, ~15 units a side | 5 turns (30k turn candidates) | 5 (239k) | 7 (153k) | 9 (1.1M) |
-| 24x24 mid-game, ~30 units a side | 3 (13k) | 3 (86k) | 5 (56k) | 5 (366k) |
+| 16x16 mid-game, ~15 units a side | 5 turns (30k turn candidates) | 7 (237k) | 7 (153k) | 9 (1.1M) |
+| 24x24 mid-game, ~30 units a side | 3 (13k) | 3 (86k) | 5 (56k) | 7 (358k) |
+
+(The threaded numbers are after the threads started sharing each depth's best root score as a
+cut-off bound; before that, 8 threads at 1 s reached only depth 5 on 16x16 and 5 s only 5 on
+24x24.)
 
 For a "realistic 16x16" the engine is useful at a second and noticeably better at five
 (1 s beats 0.3 s by ~89 elo). Threads pay off once a search has time for the next depth step.
