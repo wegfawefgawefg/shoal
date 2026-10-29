@@ -174,6 +174,14 @@ void DrawReport(State* state) {
         line = UnitName(r.mover) + " " + TileName(map, m.from) + " to " + TileName(map, m.to) +
                ", drops on " + TileName(map, m.target);
         break;
+    case MoveKind::Dive:
+    case MoveKind::Surface:
+        line = UnitName(r.mover) + " " + TileName(map, m.from);
+        if (m.to != m.from) {
+            line += " to " + TileName(map, m.to);
+        }
+        line += m.kind == MoveKind::Dive ? ", dives" : ", surfaces";
+        break;
     case MoveKind::Wait:
     case MoveKind::Attack:
     case MoveKind::Capture:

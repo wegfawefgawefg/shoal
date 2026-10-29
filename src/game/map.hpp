@@ -1,5 +1,6 @@
 #pragma once
 
+#include "rules/damage.hpp"
 #include "rules/terrain.hpp"
 #include "rules/units.hpp"
 
@@ -37,7 +38,7 @@ struct Map {
     std::vector<StartUnit> start_units;
     int start_funds[2] = {0, 0};
     int funds_per_property = 1000;
-    int day_limit = 20;     // the game is scored when player 2's turn ends on this day
+    int day_limit = 20;      // the game is scored when player 2's turn ends on this day
     bool production = false; // bases build units
     bool buildable[kUnitTypeCount] = {};
 

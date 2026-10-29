@@ -5,6 +5,7 @@
 int main() {
     TestResults results;
     RunRulesTests(results);
+    RunAirSeaTests(results);
     RunFileTests(results);
     RunFuzzTests(results);
     RunPlannerTests(results);

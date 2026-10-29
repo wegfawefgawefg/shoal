@@ -196,6 +196,13 @@ void DrawMoveMarks(const Canvas& canvas, const MoveReport& report, const Positio
         DrawChip(canvas, f.P(0.5f, 0.12f), "dropped", kPlayer[report.side], kInk);
         return;
     }
+    case MoveKind::Dive:
+    case MoveKind::Surface: {
+        Frame f = TileFrame(canvas, report.move.to);
+        const char* text = report.move.kind == MoveKind::Dive ? "dived" : "surfaced";
+        DrawChip(canvas, f.P(0.5f, 0.12f), text, kPlayer[report.side], kInk);
+        return;
+    }
     case MoveKind::Attack:
         DrawAttack(canvas, report, before);
         return;

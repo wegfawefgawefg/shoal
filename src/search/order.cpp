@@ -44,8 +44,8 @@ int CaptureScore(const Map& map, const Position& pos, const Move& move) {
 
 } // namespace
 
-void ScoreMoves(const Map& map, const Position& pos, const MoveList& list,
-                const Move* table_move, const std::int32_t* history, int* scores) {
+void ScoreMoves(const Map& map, const Position& pos, const MoveList& list, const Move* table_move,
+                const std::int32_t* history, int* scores) {
     for (int i = 0; i < list.count; i++) {
         const Move& move = list.moves[i];
         int score = 0;
@@ -65,6 +65,8 @@ void ScoreMoves(const Map& map, const Position& pos, const MoveList& list,
         case MoveKind::Join:
         case MoveKind::Load:
         case MoveKind::Unload:
+        case MoveKind::Dive:
+        case MoveKind::Surface:
             score = kTacticalBase;
             break;
         case MoveKind::EndTurn:

@@ -41,10 +41,12 @@ std::uint64_t UnitHashKey(const Unit& unit) {
     key = key << 8 | unit.hp;
     key = key << 8 | unit.ammo;
     key = key << 8 | unit.done;
+    key = key << 8 | static_cast<std::uint64_t>(unit.fuel << 1 | unit.dived);
     std::uint64_t hash = Mix(key);
     for (int i = 0; i < unit.cargo_count; i++) {
         const Cargo& cargo = unit.cargo[i];
         std::uint64_t cargo_key = 6ull << 60 | static_cast<std::uint64_t>(i) << 40 |
+                                  static_cast<std::uint64_t>(cargo.fuel) << 48 |
                                   static_cast<std::uint64_t>(unit.tile) << 24 |
                                   static_cast<std::uint64_t>(cargo.type) << 16 |
                                   static_cast<std::uint64_t>(cargo.hp) << 8 | cargo.ammo;
@@ -88,6 +90,10 @@ std::string MoveText(const Map& map, const Move& move) {
         return TileName(map, move.from) + " " + TileName(map, move.to) + " join";
     case MoveKind::Load:
         return TileName(map, move.from) + " " + TileName(map, move.to) + " load";
+    case MoveKind::Dive:
+        return TileName(map, move.from) + " " + TileName(map, move.to) + " dive";
+    case MoveKind::Surface:
+        return TileName(map, move.from) + " " + TileName(map, move.to) + " surface";
     case MoveKind::Unload: {
         std::string text = TileName(map, move.from) + " " + TileName(map, move.to) + " drop " +
                            TileName(map, move.target);
@@ -143,6 +149,14 @@ bool ParseMoveText(const Map& map, std::string_view text, Move* move) {
     }
     if (words.size() == 3 && words[2] == "load") {
         move->kind = MoveKind::Load;
+        return true;
+    }
+    if (words.size() == 3 && words[2] == "dive") {
+        move->kind = MoveKind::Dive;
+        return true;
+    }
+    if (words.size() == 3 && words[2] == "surface") {
+        move->kind = MoveKind::Surface;
         return true;
     }
     int drop = 0;

@@ -17,7 +17,7 @@ struct Cargo {
     UnitType type = UnitType::Infantry;
     std::uint8_t hp = 100;
     std::uint8_t ammo = 0;
-    std::uint8_t pad = 0;
+    std::uint8_t fuel = 0;
 };
 
 struct Unit {
@@ -26,10 +26,15 @@ struct Unit {
     std::uint8_t hp = 100; // internal hit points 1..100; the board shows (hp + 9) / 10
     std::uint8_t ammo = 0;
     std::uint16_t tile = 0;
-    std::uint8_t done = 0; // acted this turn
+    std::uint8_t done = 0; // acted this turn; kDropping: dropped cargo, may drop the rest
     std::uint8_t cargo_count = 0;
+    std::uint8_t fuel = 0;
+    std::uint8_t dived = 0; // a sub under water
     Cargo cargo[kMaxCargo];
 };
+
+// a transport that has dropped one cargo and not moved since may drop its other cargo
+constexpr std::uint8_t kDropping = 2;
 
 inline int DisplayHp(int hp) {
     return (hp + 9) / 10;
@@ -62,10 +67,15 @@ enum class MoveKind : std::uint8_t {
     Attack,
     Capture,
     Build,
-    Join,   // move onto a hurt friendly unit of the same type and merge into it
-    Load,   // move into a friendly transport on `to`
-    Unload, // the transport moves to `to` and drops cargo `slot` on `target`
+    Join,    // move onto a hurt friendly unit of the same type and merge into it
+    Load,    // move into a friendly transport on `to`
+    Unload,  // the transport moves to `to` and drops cargo `slot` on `target`
+    Dive,    // a sub moves to `to` and dives
+    Surface, // a dived sub moves to `to` and comes up
 };
+
+// Move::points when the move did not come from GenerateMoves
+constexpr std::uint8_t kUnknownPoints = 0xff;
 
 // one unit action, or the end of the turn; units are named by the tile they start on
 struct Move {
@@ -75,8 +85,12 @@ struct Move {
     std::uint16_t to = 0;
     std::uint16_t target = 0;
     std::uint8_t slot = 0; // which cargo an unload drops
+    // move points (and fuel) the unit spends getting to `to`; GenerateMoves fills it, other
+    // moves leave kUnknownPoints and ApplyMove works it out. Not part of a move's identity
+    std::uint8_t points = kUnknownPoints;
 };
 
+// a move with the same identity as `a`; ignores `points`
 inline bool operator==(const Move& a, const Move& b) {
     return a.kind == b.kind && a.build == b.build && a.from == b.from && a.to == b.to &&
            a.target == b.target && a.slot == b.slot;
@@ -100,6 +114,11 @@ bool IsLegal(const Map& map, const Position& pos, const Move& move);
 // tiles a unit can end its move on (its own tile included); friends can be passed, enemies
 // block; returns the count
 int ReachableTiles(const Map& map, const Position& pos, const Unit& unit, int out[kMaxTiles]);
+// move points a unit spends on its cheapest path to `to` (0 to stay), or -1 if it cannot get
+// there; the same limits as ReachableTiles
+int PathPoints(const Map& map, const Position& pos, const Unit& unit, int to);
+// the points a move spends: move.points when known, else PathPoints
+int MovePoints(const Map& map, const Position& pos, const Move& move);
 // a unit may join `target`: same owner and type, a different unit, target shows < 10 hp, and
 // neither carries anything
 bool CanJoin(const Unit& unit, const Unit& target);
@@ -116,8 +135,12 @@ std::uint64_t ComputeHash(const Map& map, const Position& pos);
 // one unit's share of the hash; the hash xors these with the board terms
 std::uint64_t UnitHashKey(const Unit& unit);
 
+// whether `attacker` can fire on `defender` at all now: a weapon that hits it with ammo to
+// spare, and a dived sub only by cruisers and subs
+bool CanHit(const Unit& attacker, const Unit& defender);
+
 // "a2 b2", "a2 b2 x c2", "a2 a2 cap", "a2 b2 join", "a2 b2 load", "b2 c2 drop c3",
-// "b2 c2 drop c3 2" (second cargo), "b1 build inf", "end"
+// "b2 c2 drop c3 2" (second cargo), "a1 b1 dive", "a1 b1 surface", "b1 build inf", "end"
 std::string MoveText(const Map& map, const Move& move);
 bool ParseMoveText(const Map& map, std::string_view text, Move* move);
 

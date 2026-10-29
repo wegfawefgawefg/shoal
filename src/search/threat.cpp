@@ -4,13 +4,6 @@ namespace shoal {
 
 namespace {
 
-bool CanStrike(const Unit& attacker, const Unit& defender) {
-    if (PrimaryDamage(attacker.type, defender.type) > 0 && attacker.ammo > 0) {
-        return true;
-    }
-    return SecondaryDamage(attacker.type, defender.type) > 0;
-}
-
 void MarkRing(const Map& map, int center, int range_min, int range_max, std::uint64_t bit,
               ThreatMap* threats) {
     int x0 = TileX(map, center);
@@ -51,8 +44,8 @@ void BuildThreats(const Map& map, const Position& pos, int attacker_side, Threat
         threats->slot_tile[slot] = unit.tile;
         std::uint64_t bit = 1ull << slot;
         const UnitSpec& spec = Spec(unit.type);
-        if (spec.ammo == 0 && SecondaryDamage(unit.type, UnitType::Infantry) == 0) {
-            continue; // unarmed
+        if (!IsArmed(unit.type)) {
+            continue;
         }
         if (spec.range_max > 1) {
             MarkRing(map, unit.tile, spec.range_min, spec.range_max, bit, threats);
@@ -81,7 +74,7 @@ int Exposure(const Map& map, const Position& pos, const ThreatMap& threats, cons
             continue;
         }
         const Unit& attacker = pos.units[index];
-        if (attacker.owner != threats.attacker_side || !CanStrike(attacker, placed)) {
+        if (attacker.owner != threats.attacker_side || !CanHit(attacker, placed)) {
             continue;
         }
         int damage = AttackDamage(map, attacker, placed, tile);

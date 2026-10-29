@@ -12,7 +12,8 @@ struct EvalWeights {
     int property_base = 1500; // a property's worth on top of its income
     int property_days = 6;    // days of income a property is worth at most
     int capture_share = 50;   // percent of a property's worth a half-done capture earns, pro rata
-    int unit_value[kUnitTypeCount] = {100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
+    int unit_value[kUnitTypeCount] = {100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
+                                      100, 100, 100, 100, 100, 100, 100, 100, 100};
 };
 
 // static score in funds from the view of `side`; positive is good for `side`

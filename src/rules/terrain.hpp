@@ -36,29 +36,29 @@ struct TerrainSpec {
 
 // AWBW terrain chart (awbw.amarriner.com/terrain.php), clear weather
 inline constexpr TerrainSpec kTerrainSpecs[kTerrainCount] = {
-    {"Plain", '.', 1, false},   {"Wood", 'w', 2, false},     {"Mountain", '^', 4, false},
-    {"Road", '=', 0, false},    {"Bridge", '#', 0, false},   {"River", '~', 0, false},
-    {"Sea", 's', 0, false},     {"Shoal", '_', 0, false},    {"Reef", 'r', 1, false},
-    {"City", 'c', 3, true},     {"Base", 'b', 3, true},      {"HQ", 'h', 4, true},
-    {"Airport", 'a', 3, true},  {"Port", 'p', 3, true},
+    {"Plain", '.', 1, false},  {"Wood", 'w', 2, false},   {"Mountain", '^', 4, false},
+    {"Road", '=', 0, false},   {"Bridge", '#', 0, false}, {"River", '~', 0, false},
+    {"Sea", 's', 0, false},    {"Shoal", '_', 0, false},  {"Reef", 'r', 1, false},
+    {"City", 'c', 3, true},    {"Base", 'b', 3, true},    {"HQ", 'h', 4, true},
+    {"Airport", 'a', 3, true}, {"Port", 'p', 3, true},
 };
 
-// columns: foot boot treads tires
+// AWBW terrain chart, clear weather; columns: foot boot treads tires air sea lander
 inline constexpr std::uint8_t kMoveCost[kTerrainCount][static_cast<int>(MoveType::Count)] = {
-    {1, 1, 1, 2}, // plain
-    {1, 1, 2, 3}, // wood
-    {2, 1, 0, 0}, // mountain
-    {1, 1, 1, 1}, // road
-    {1, 1, 1, 1}, // bridge
-    {2, 1, 0, 0}, // river
-    {0, 0, 0, 0}, // sea
-    {1, 1, 1, 1}, // shoal
-    {0, 0, 0, 0}, // reef
-    {1, 1, 1, 1}, // city
-    {1, 1, 1, 1}, // base
-    {1, 1, 1, 1}, // hq
-    {1, 1, 1, 1}, // airport
-    {1, 1, 1, 1}, // port
+    {1, 1, 1, 2, 1, 0, 0}, // plain
+    {1, 1, 2, 3, 1, 0, 0}, // wood
+    {2, 1, 0, 0, 1, 0, 0}, // mountain
+    {1, 1, 1, 1, 1, 0, 0}, // road
+    {1, 1, 1, 1, 1, 0, 0}, // bridge
+    {2, 1, 0, 0, 1, 0, 0}, // river
+    {0, 0, 0, 0, 1, 1, 1}, // sea
+    {1, 1, 1, 1, 1, 0, 1}, // shoal
+    {0, 0, 0, 0, 1, 2, 2}, // reef
+    {1, 1, 1, 1, 1, 0, 0}, // city
+    {1, 1, 1, 1, 1, 0, 0}, // base
+    {1, 1, 1, 1, 1, 0, 0}, // hq
+    {1, 1, 1, 1, 1, 0, 0}, // airport
+    {1, 1, 1, 1, 1, 1, 1}, // port
 };
 
 inline const TerrainSpec& Spec(Terrain terrain) {
@@ -70,8 +70,13 @@ inline int MoveCost(Terrain terrain, MoveType move_type) {
     return kMoveCost[static_cast<int>(terrain)][static_cast<int>(move_type)];
 }
 
-// own city, base and hq repair and resupply ground units
-bool RepairsGround(Terrain terrain);
+// an own property that repairs and resupplies this unit: city, base and hq for ground
+// units, airports for air units, ports for sea units
+bool RepairsUnit(Terrain terrain, UnitType type);
+// the property that builds this unit: bases ground, airports air, ports sea
+bool BuildsUnit(Terrain terrain, UnitType type);
+// a property that builds anything
+bool IsFactory(Terrain terrain);
 
 bool TerrainFromGlyph(char glyph, Terrain* out);
 

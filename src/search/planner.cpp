@@ -15,8 +15,7 @@ constexpr int kMaxTurnActions = 80;
 constexpr int kInfinity = kWinScore + 1;
 
 bool Skippable(const Move& move) {
-    return move.kind == MoveKind::EndTurn ||
-           (move.kind == MoveKind::Wait && move.from == move.to);
+    return move.kind == MoveKind::EndTurn || (move.kind == MoveKind::Wait && move.from == move.to);
 }
 
 bool OutOfTime(Planner* planner) {
@@ -35,18 +34,12 @@ struct BeamNode {
 // Returns false when the move needs the full path (attacks, captures, builds, or leaving a
 // capture half done)
 bool ScoreQuietMove(const PlanContext& ctx, const TurnPlan& plan, const Move& move, int* score) {
-    if (move.kind != MoveKind::Wait) {
-        return false;
-    }
     const Position& pos = plan.end;
-    int from_prop = ctx.map->property_at[move.from];
-    if (from_prop != kNoProperty && pos.capture[from_prop] != kCapturePoints) {
+    Unit moved;
+    if (!QuietMoved(*ctx.map, pos, move, &moved)) {
         return false;
     }
     const Unit& unit = pos.units[pos.unit_at[move.from]];
-    Unit moved = unit;
-    moved.tile = move.to;
-    moved.done = 1;
     *score = plan.score - PlanUnitTerms(ctx, pos, unit) + PlanUnitTerms(ctx, pos, moved);
     return true;
 }
@@ -76,8 +69,7 @@ int Leaf(Planner* planner, const Position& pos) {
     return (now + GreedyTurn(planner, pos).score) / 2;
 }
 
-int TurnNegamax(Planner* planner, const Position& pos, int turns, int width, int alpha,
-                int beta) {
+int TurnNegamax(Planner* planner, const Position& pos, int turns, int width, int alpha, int beta) {
     if (pos.result != Result::Ongoing) {
         return ResultScore(pos.result, pos.side);
     }
@@ -238,9 +230,9 @@ PlannerResult PlanTurnThreaded(Planner* planner, const Position& pos, const Plan
     int root_count = static_cast<int>(roots.size());
     int max_steps = (limits.max_turns + 1) / 2;
     // scores[root][step], step k is depth 2k+1; kInfinity+1 marks unfinished
-    std::vector<std::vector<int>> scores(static_cast<std::size_t>(root_count),
-                                         std::vector<int>(static_cast<std::size_t>(max_steps),
-                                                          kInfinity + 1));
+    std::vector<std::vector<int>> scores(
+        static_cast<std::size_t>(root_count),
+        std::vector<int>(static_cast<std::size_t>(max_steps), kInfinity + 1));
     std::vector<std::uint64_t> plans(static_cast<std::size_t>(limits.threads), 0);
     int width = limits.beam_width > 2 ? limits.beam_width - 2 : 2;
     auto worker = [&](int thread) {
@@ -250,8 +242,8 @@ PlannerResult PlanTurnThreaded(Planner* planner, const Position& pos, const Plan
         local.stopped = false;
         for (int step = 0; step < max_steps; step++) {
             for (int i = thread; i < root_count; i += limits.threads) {
-                int score = RootScore(&local, pos, roots[static_cast<std::size_t>(i)],
-                                      2 * step + 1, width);
+                int score =
+                    RootScore(&local, pos, roots[static_cast<std::size_t>(i)], 2 * step + 1, width);
                 if (local.stopped) {
                     plans[static_cast<std::size_t>(thread)] = local.plans;
                     return;
@@ -274,8 +266,8 @@ PlannerResult PlanTurnThreaded(Planner* planner, const Position& pos, const Plan
     for (int step = 0; step < max_steps; step++) {
         bool all = true;
         for (int i = 0; i < root_count; i++) {
-            all = all && scores[static_cast<std::size_t>(i)][static_cast<std::size_t>(step)] <=
-                             kInfinity;
+            all = all &&
+                  scores[static_cast<std::size_t>(i)][static_cast<std::size_t>(step)] <= kInfinity;
         }
         if (!all) {
             break;

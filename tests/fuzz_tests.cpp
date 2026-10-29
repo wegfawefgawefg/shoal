@@ -81,26 +81,18 @@ void FuzzMap(TestResults& r, const Map& map, int games, std::uint64_t seed) {
             }
             Move move = list->moves[Next(&rng) % static_cast<std::uint64_t>(list->count)];
             // a quiet move's delta score must match the full score
-            if (move.kind == MoveKind::Wait) {
-                int from_prop = map.property_at[move.from];
-                bool half_capture =
-                    from_prop != kNoProperty && pos.capture[from_prop] != kCapturePoints;
-                if (!half_capture) {
-                    const Unit& unit = pos.units[pos.unit_at[move.from]];
-                    Unit moved = unit;
-                    moved.tile = move.to;
-                    moved.done = 1;
-                    int delta = PlanScore(*ctx, pos) - PlanUnitTerms(*ctx, pos, unit) +
-                                PlanUnitTerms(*ctx, pos, moved);
-                    Position child = pos;
-                    ApplyMove(map, &child, move);
-                    if (delta != PlanScore(*ctx, child)) {
-                        r.failed++;
-                        std::printf("FAIL %s: delta score %d != full %d for %s\n",
-                                    map.name.c_str(), delta, PlanScore(*ctx, child),
-                                    MoveText(map, move).c_str());
-                        return;
-                    }
+            Unit moved;
+            if (QuietMoved(map, pos, move, &moved)) {
+                const Unit& unit = pos.units[pos.unit_at[move.from]];
+                int delta = PlanScore(*ctx, pos) - PlanUnitTerms(*ctx, pos, unit) +
+                            PlanUnitTerms(*ctx, pos, moved);
+                Position child = pos;
+                ApplyMove(map, &child, move);
+                if (delta != PlanScore(*ctx, child)) {
+                    r.failed++;
+                    std::printf("FAIL %s: delta score %d != full %d for %s\n", map.name.c_str(),
+                                delta, PlanScore(*ctx, child), MoveText(map, move).c_str());
+                    return;
                 }
             }
             ApplyMove(map, &pos, move);
