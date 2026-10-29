@@ -31,6 +31,19 @@ Scope: AW2 tier rules (AWBW), no luck, no COs, production yes, fog later.
   blunders into the game file; the viewer draws the eval graph, the marks, the engine's best
   turn as arrows, and runs the planner live on any position (`A`).
 
+## Research (owner, 2026-10-29)
+
+Each answers a question in `docs/guide/index.html` section 10; results go into the guide.
+
+1. Fog: tiny fog games solved with hidden-information methods; does fog end the standoff?
+2. Artillery and range: exact solves of inf+art vs inf+inf, rockets vs infantry, a city
+   between two defended lines.
+3. No day limit: HQ and rout as the only endings; retune and compare unit values and results.
+4. Value table: cities, the first move, unit types, terrain, each as "funds that make it even".
+5. Rule variants for a fair, combat-driven 1v1: fixed armies without production, combat win
+   conditions, second-player compensation, simultaneous turns. Measured by self-play: first
+   player win rate, draw rate, game length, comebacks.
+
 ## Queue
 
 1. Viewer: keep hand-played lines as a variation next to the game (saving works: `S`).
