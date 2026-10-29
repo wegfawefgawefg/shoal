@@ -23,5 +23,6 @@ int RunMatch(int argc, char** argv);
 int RunGenMap(int argc, char** argv);
 int RunTune(int argc, char** argv);
 int RunStats(int argc, char** argv);
+int RunDataset(int argc, char** argv);
 
 } // namespace shoal

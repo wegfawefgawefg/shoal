@@ -23,7 +23,8 @@ void PrintUsage() {
                 "  shoal match --a ENGINE --b ENGINE [maps...] [--gen SIZE COUNT] [--threads T]\n"
                 "  shoal genmap [--size N] [--seed S] [--days D] [--bases B]\n"
                 "  shoal tune [--rounds N] [--maps M] [--threads T] [--time S] [--rate R]\n"
-                "  shoal stats <games or dirs...>  builds, trades and results over games\n");
+                "  shoal stats <games or dirs...>  builds, trades and results over games\n"
+                "  shoal dataset <games or dirs...> --out rows.csv  turn-start features\n");
 }
 
 } // namespace
@@ -72,6 +73,9 @@ int main(int argc, char** argv) {
     }
     if (command == "stats") {
         return shoal::RunStats(argc - 2, argv + 2);
+    }
+    if (command == "dataset") {
+        return shoal::RunDataset(argc - 2, argv + 2);
     }
     std::fprintf(stderr, "unknown command %s\n", command.c_str());
     PrintUsage();
