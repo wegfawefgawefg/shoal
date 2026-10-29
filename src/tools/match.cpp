@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -141,6 +142,10 @@ int RunMatch(int argc, char** argv) {
 
     for (auto& map : maps) {
         map->start_funds[1] += options.p2_funds;
+    }
+    if (!options.out_dir.empty()) {
+        std::error_code ignored;
+        std::filesystem::create_directories(options.out_dir, ignored);
     }
 
     std::vector<GameTask> tasks;

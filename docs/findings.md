@@ -105,6 +105,8 @@ income at the start.
   city.
 - The armies became tank-heavy: 5318 tanks, 2021 infantry, 243 neotanks (late, trading 8.85
   funds dealt per fund lost), hardly any artillery (5) or anti-air (9).
+- Forcing artillery (worth 140% of cost instead of 90%) changes nothing measurable: +10 =5 -9
+  against the tuned engine. Artillery is a flat direction for this engine, not a missed edge.
 - A logistic fit of the results on material per unit type (`scripts/fit_values.py`) is too
   confounded to read as unit values yet: infantry material stands in for captures and the
   early game, and rare units (artillery, APC) get noise. Needs more varied games.
