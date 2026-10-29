@@ -238,11 +238,19 @@ int* PropertyDays(PlanWeights* w) {
 int* CaptureShare(PlanWeights* w) {
     return &w->eval.capture_share;
 }
+int* EndgameDays(PlanWeights* w) {
+    return &w->eval.endgame_days;
+}
+int* EndgameProp(PlanWeights* w) {
+    return &w->eval.endgame_prop;
+}
 
 const EvalWeightName kEvalWeightNames[] = {
     {"property_base", PropertyBase},
     {"property_days", PropertyDays},
     {"capture_share", CaptureShare},
+    {"endgame_days", EndgameDays},
+    {"endgame_prop", EndgameProp},
 };
 
 } // namespace

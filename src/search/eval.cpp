@@ -69,6 +69,14 @@ int Evaluate(const Map& map, const Position& pos, int side, const EvalWeights& w
         score[owner] += map.production ? pos.funds[owner] : pos.funds[owner] / 5;
     }
 
+    // the day limit counts properties: inside its window every property of difference weighs
+    // more each day, so a big army cannot sit on a losing count until the search sees the end
+    int days_left = map.day_limit - pos.day;
+    int window = weights.endgame_days - days_left;
+    if (window > 0) {
+        int lead = PropertyCount(pos, map, side) - PropertyCount(pos, map, side ^ 1);
+        return score[side] - score[side ^ 1] + lead * window * weights.endgame_prop;
+    }
     return score[side] - score[side ^ 1];
 }
 

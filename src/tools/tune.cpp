@@ -38,6 +38,8 @@ const TuneParam kParams[] = {
     {"property_base", 300, 0, 10000},
     {"property_days", 1, 1, 20},
     {"capture_share", 8, 0, 100},
+    {"endgame_days", 1, 0, 20},
+    {"endgame_prop", 300, 0, 20000},
     {"value_inf", 6, 40, 250},
     {"value_mech", 6, 40, 250},
     {"value_recon", 6, 40, 250},
