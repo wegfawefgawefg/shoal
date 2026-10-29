@@ -16,7 +16,7 @@ What the engine has taught us so far. Player 0 moves first. No luck, no COs.
 | hqrace4 | 4x4, hq each, inf vs inf | player 0 wins |
 | twoinf5 | 5x5 plain, two inf each, 6 days | player 0 wins |
 | tankinf5 | 5x5, tank (moves first) vs two inf | player 0 wins |
-| hq5 | 5x5, hq + city, inf + tank each | draw with 1-4 day limits; 10 days unsolved |
+| hq5 | 5x5, hq + city, inf + tank each | draw with 1-5 day limits (5 days: 3.4B nodes, 17 min); 6 days running |
 
 The perfect-play lines are in `games/solved/` (`shoal search MAP --solve --out FILE`);
 open them in the viewer to watch optimal play.
