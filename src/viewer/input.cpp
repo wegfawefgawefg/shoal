@@ -2,6 +2,7 @@
 
 #include "analysis_panel.hpp"
 #include "layout.hpp"
+#include "engine_opponent.hpp"
 #include "live_analysis.hpp"
 #include "play_mode.hpp"
 #include "replay.hpp"
@@ -69,6 +70,9 @@ void HandleKey(State* state, SDL_Keycode key) {
         return;
     case SDLK_B:
         state->show_best = !state->show_best;
+        return;
+    case SDLK_O:
+        ToggleEngineOpponent(state);
         return;
     case SDLK_Q:
         state->running = false;

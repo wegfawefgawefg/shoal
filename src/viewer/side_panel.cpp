@@ -117,6 +117,12 @@ void DrawHeader(State* state) {
         if (state->mode == Mode::Play) {
             status += "   play mode";
         }
+        if (state->opponent.side >= 0) {
+            status += "   engine plays " + std::string(kPlayerName[state->opponent.side]);
+            if (state->opponent.job != nullptr) {
+                status += ", thinking...";
+            }
+        }
         DrawText(&state->font, l.header.x, y, small, kTextDim, status);
     }
     int eval = 0;
@@ -219,7 +225,7 @@ void DrawFooter(State* state) {
     DrawText(&state->font, l.footer.x, y, size, kTextFaint,
              "left right  move     up down  turn     home end");
     std::string second = state->mode == Mode::Play
-                             ? "P  replay   E  end turn   Esc  cancel   R  reload   A  analyse"
+                             ? "P  replay   E  end turn   O  engine opponent   Esc  cancel   R  reload   A  analyse"
                              : "P  play from here     A  analyse     B  best turn";
     DrawText(&state->font, l.footer.x, y + LineHeight(size), size, kTextFaint, second);
 }

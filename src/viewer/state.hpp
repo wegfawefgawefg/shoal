@@ -92,6 +92,15 @@ struct LiveAnalysis {
     double seconds = 1.5; // per press: two searches of half this
 };
 
+// a planner search playing one side in play mode (engine_opponent.cpp)
+struct OpponentJob;
+
+struct EngineOpponent {
+    int side = -1; // the side the engine plays, -1 when off (key O)
+    std::shared_ptr<OpponentJob> job;
+    double seconds = 2.0; // per engine turn
+};
+
 struct State {
     // the game
     std::string path;
@@ -105,6 +114,7 @@ struct State {
     PlayState play;
     int edited_from = -1; // first ply entered by hand, -1 when the line is the file's
     LiveAnalysis live;
+    EngineOpponent opponent;
     bool show_best = true; // the engine's best turn as arrows on the board (B)
 
     // window

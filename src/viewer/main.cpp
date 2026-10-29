@@ -3,6 +3,7 @@
 #include "board_draw.hpp"
 #include "input.hpp"
 #include "layout.hpp"
+#include "engine_opponent.hpp"
 #include "live_analysis.hpp"
 #include "palette.hpp"
 #include "play_mode.hpp"
@@ -163,9 +164,15 @@ int RunScreenshot(State* state, const Options& options) {
         LayOut(state);
         DrawFrame(state);
     }
-    // a live analysis (A) finishes before the shot, so the shot shows its result
+    // a live analysis (A) finishes before the shot, so the shot shows its result; so does
+    // an engine turn (O)
     if (LiveAnalysisRunning(*state)) {
         WaitLiveAnalysis(state);
+        LayOut(state);
+    }
+    PollEngineOpponent(state);
+    if (EngineOpponentThinking(*state)) {
+        WaitEngineOpponent(state);
         LayOut(state);
     }
     DrawFrame(state);
@@ -208,7 +215,8 @@ int RunWindow(State* state, const Options& options) {
         // pump input: sleep until something happens, then drain the queue; while the engine
         // thinks, wake often enough to pick up its answer
         SDL_Event event;
-        int wait_ms = LiveAnalysisRunning(*state) ? 50 : 500;
+        bool busy = LiveAnalysisRunning(*state) || EngineOpponentThinking(*state);
+        int wait_ms = busy ? 50 : 500;
         if (SDL_WaitEventTimeout(&event, wait_ms)) {
             HandleEvent(state, &event);
             while (SDL_PollEvent(&event)) {
@@ -217,6 +225,7 @@ int RunWindow(State* state, const Options& options) {
         }
 
         PollLiveAnalysis(state);
+        PollEngineOpponent(state);
 
         // lay out for the current window size
         LayOut(state);
@@ -227,6 +236,7 @@ int RunWindow(State* state, const Options& options) {
     }
 
     WaitLiveAnalysis(state);
+    WaitEngineOpponent(state);
     if (state->board_texture) {
         SDL_DestroyTexture(state->board_texture);
     }

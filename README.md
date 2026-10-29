@@ -35,7 +35,8 @@ hides them) and written in the panel.
 `A` runs the planner on the shown position on a background thread (1.5 s) and shows its score
 and best line; it is what makes play mode useful. `P` switches to play mode: click a unit, a
 destination, then an action; the moves after the current one are replaced, `R` reloads the
-file. `--screenshot` draws one frame with a software renderer and no window
+file. `O` makes the engine play the other side: end your turn (`E`) and it answers with its
+own turn (2 s, half the cores). `--screenshot` draws one frame with a software renderer and no window
 (`--events right,up,click:X:Y,a,...` scripts input first; a live analysis is waited for).
 
 ## Analysis
