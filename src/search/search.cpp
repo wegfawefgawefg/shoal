@@ -124,6 +124,7 @@ int Quiesce(Searcher* s, const Position& pos, int alpha, int beta, int ply, int 
 
 int Negamax(Searcher* s, const Position& pos, int depth, int alpha, int beta, int ply) {
     s->nodes++;
+    std::uint64_t nodes_start = s->nodes;
     if (pos.result != Result::Ongoing) {
         return Terminal(*s, pos, ply);
     }
@@ -209,7 +210,7 @@ int Negamax(Searcher* s, const Position& pos, int depth, int alpha, int beta, in
         bound = Bound::Lower;
     }
     TableStore(&s->table, pos.hash, ToTable(best_score, ply), s->solve ? kSolveDepth : depth,
-               bound, best_move);
+               bound, best_move, s->nodes - nodes_start);
     return best_score;
 }
 
