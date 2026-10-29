@@ -7,7 +7,7 @@
 
 namespace shoal {
 
-constexpr int kMaxUnits = 64;
+constexpr int kMaxUnits = 128; // both sides together; unit_at holds indices below 0xff
 constexpr std::uint8_t kNoUnit = 0xff;
 constexpr int kCapturePoints = 20;
 

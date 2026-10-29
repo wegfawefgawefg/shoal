@@ -175,7 +175,7 @@ bool ReadMap(gsexp::Node root, Map* map, std::string* error) {
         }
     }
     if (static_cast<int>(map->start_units.size()) > kMaxUnits) {
-        return Fail(error, "more than 64 units");
+        return Fail(error, "more than " + std::to_string(kMaxUnits) + " units");
     }
     return true;
 }

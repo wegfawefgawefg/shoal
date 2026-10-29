@@ -44,6 +44,9 @@ void BuildThreats(const Map& map, const Position& pos, int attacker_side, Threat
         if (unit.owner != attacker_side) {
             continue;
         }
+        if (threats->slot_count == kMaxThreatSlots) {
+            break; // past 64 attackers the rest go uncounted
+        }
         int slot = threats->slot_count++;
         threats->slot_tile[slot] = unit.tile;
         std::uint64_t bit = 1ull << slot;

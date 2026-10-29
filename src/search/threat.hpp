@@ -8,10 +8,12 @@ namespace shoal {
 
 // who can strike which tile next turn. Attackers are named by slot; a slot remembers the
 // tile its unit stands on, so a slot dies when that unit is killed during our turn
+constexpr int kMaxThreatSlots = 64; // one bit each in `attackers`
+
 struct ThreatMap {
     int attacker_side = 0;
     int slot_count = 0;
-    std::uint16_t slot_tile[kMaxUnits];
+    std::uint16_t slot_tile[kMaxThreatSlots];
     std::uint64_t attackers[kMaxTiles]; // bit per slot
 };
 
