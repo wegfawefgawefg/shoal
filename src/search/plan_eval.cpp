@@ -99,7 +99,7 @@ int FighterPlacement(const PlanContext& ctx, const Position& pos, const Unit& un
             }
         }
         int turns = (points + spec.move - 1) / spec.move;
-        int hit = ctx.weights.fight_damage ? damage * Spec(enemy.type).cost / 100 : spec.cost;
+        int hit = damage * Spec(enemy.type).cost / 100;
         int value = Clamp0(ctx.weights.fight_turns - turns) * hit;
         if (value > best) {
             best = value;
@@ -122,7 +122,6 @@ const WeightName kWeightNames[] = {
     {"fight_share", &PlanWeights::fight_share},
     {"base_block", &PlanWeights::base_block},
     {"idle_funds", &PlanWeights::idle_funds},
-    {"fight_damage", &PlanWeights::fight_damage},
 };
 
 struct EvalWeightName {

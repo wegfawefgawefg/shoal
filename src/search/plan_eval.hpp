@@ -35,7 +35,6 @@ struct PlanWeights {
     int fight_share = 70;      // per mille of a fighter's cost, per turn closer than that
     int base_block = 173;      // our own unit on our base at the end of the turn
     int idle_funds = 0;        // percent of unspent funds subtracted where bases build
-    int fight_damage = 1;      // TEMPORARY a/b: 1 weighs fighter pull by damage, 0 by own cost
     EvalWeights eval;
 };
 
