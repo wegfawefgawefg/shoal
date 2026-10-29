@@ -1,4 +1,5 @@
 #include "io/board_text.hpp"
+#include "search/eval.hpp"
 #include "search/search.hpp"
 #include "tools/commands.hpp"
 
@@ -97,6 +98,42 @@ int RunSearch(int argc, char** argv) {
         std::printf("solved: %s\n", result.complete ? verdict : "unfinished (limit hit)");
     }
     std::printf("line: %s\n", LineText(game->map, result.pv, 40).c_str());
+    if (!options.out_path.empty()) {
+        // the line as a game from this position: the moves played so far, then the line
+        Position line_pos = pos;
+        int value = result.score > 0 ? kWinScore : (result.score < 0 ? -kWinScore : 0);
+        std::vector<Move> line = result.pv;
+        for (int pass = 0; pass < 200; pass++) {
+            for (const Move& move : line) {
+                int mover = line_pos.side;
+                ApplyMove(game->map, &line_pos, move);
+                game->moves.push_back(move);
+                // solved values are from the root mover's view; store each from its mover's
+                // view
+                int eval = options.limits.solve ? (mover == pos.side ? value : -value) : 0;
+                game->evals.push_back(eval);
+            }
+            // a line can break where the table lost an entry: solve again from there
+            if (!options.limits.solve || line_pos.result != Result::Ongoing) {
+                break;
+            }
+            SearchLimits again = options.limits;
+            again.quiet = true;
+            line = Search(searcher.get(), line_pos, again).pv;
+            if (line.empty()) {
+                break;
+            }
+        }
+        if (!game->evals.empty() && game->evals.size() != game->moves.size()) {
+            game->evals.clear();
+        }
+        if (!WriteWholeFile(options.out_path, WriteGameText(*game))) {
+            std::fprintf(stderr, "cannot write %s\n", options.out_path.c_str());
+            return 1;
+        }
+        std::printf("wrote %s (%s)\n", options.out_path.c_str(),
+                    ResultTextFor(line_pos.result));
+    }
     return 0;
 }
 

@@ -264,7 +264,7 @@ SearchResult Search(Searcher* s, const Position& root, const SearchLimits& limit
         if (entry != nullptr) {
             result.best = entry->best;
         }
-        result.pv = PrincipalLine(s, root, 64);
+        result.pv = PrincipalLine(s, root, limits.solve ? 4000 : 64);
         if (!limits.quiet) {
             std::printf("depth %d score %d nodes %llu time %.2fs\n",
                         limits.solve ? -1 : depth, score,

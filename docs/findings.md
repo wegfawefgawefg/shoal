@@ -18,6 +18,9 @@ What the engine has taught us so far. Player 0 moves first. No luck, no COs.
 | tankinf5 | 5x5, tank (moves first) vs two inf | player 0 wins |
 | hq5 | 5x5, hq + city, inf + tank each | draw with 1-4 day limits; 10 days unsolved |
 
+The perfect-play lines are in `games/solved/` (`shoal search MAP --solve --out FILE`);
+open them in the viewer to watch optimal play.
+
 Lesson: when the armies start out of reach, whoever steps into the other's range first
 gives away the first strike, so symmetric open duels are draws: neither side approaches.
 Where the first mover can strike on day 1 (3x3) or there is something to take (cities,
