@@ -34,6 +34,7 @@ const TuneParam kParams[] = {
     {"fight_share", 8, 0, 300},
     {"base_block", 120, 0, 3000},
     {"idle_funds", 5, 0, 80},
+    {"excess_funds", 8, 0, 100},
     {"property_base", 300, 0, 10000},
     {"property_days", 1, 1, 20},
     {"capture_share", 8, 0, 100},
@@ -148,7 +149,10 @@ int RunTune(int argc, char** argv) {
         for (int m = 0; m < maps_per_round; m++) {
             auto map = std::make_unique<Map>();
             MapGenOptions gen;
-            gen.width = gen.height = 9 + static_cast<int>(NextRandom(&rng) % 6);
+            // small to big maps, with one to three bases a side so money is sometimes plentiful
+            gen.width = gen.height = 9 + static_cast<int>(NextRandom(&rng) % 10);
+            gen.bases_per_side = 1 + static_cast<int>(NextRandom(&rng) % 3);
+            gen.day_limit = 15 + gen.width / 2;
             gen.seed = NextRandom(&rng);
             GenerateMap(gen, map.get());
             maps.push_back(std::move(map));

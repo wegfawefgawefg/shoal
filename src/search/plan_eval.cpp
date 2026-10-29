@@ -122,6 +122,8 @@ const WeightName kWeightNames[] = {
     {"fight_share", &PlanWeights::fight_share},
     {"base_block", &PlanWeights::base_block},
     {"idle_funds", &PlanWeights::idle_funds},
+    {"excess_funds", &PlanWeights::excess_funds},
+    {"spend_per_base", &PlanWeights::spend_per_base},
 };
 
 struct EvalWeightName {
@@ -278,6 +280,17 @@ int PlanScore(const PlanContext& ctx, const Position& pos) {
     if (map.production) {
         // unspent funds are worth a little less than the units they could buy
         score -= pos.funds[ctx.side] * ctx.weights.idle_funds / 100;
+        // past what our bases could spend next turn, money is worth much less: build slots,
+        // not funds, are what limit us then
+        int bases = 0;
+        for (int prop = 0; prop < map.property_count; prop++) {
+            bases += pos.prop_owner[prop] == ctx.side &&
+                     map.tiles[map.property_tiles[prop]] == Terrain::Base;
+        }
+        int excess = pos.funds[ctx.side] - bases * ctx.weights.spend_per_base;
+        if (excess > 0) {
+            score -= excess * ctx.weights.excess_funds / 100;
+        }
     }
     for (int i = 0; i < pos.unit_count; i++) {
         const Unit& unit = pos.units[i];
