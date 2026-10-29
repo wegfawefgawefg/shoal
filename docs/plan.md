@@ -17,7 +17,8 @@ Scope: AW2 tier rules (AWBW), no luck, no COs, production yes, fog later.
 - Rules engine: all AW2 ground, air and sea units (no Dual Strike units), movement, combat
   with counters and ammo, fuel, capture, repair at cities/airports/ports, income, builds at
   bases/airports/ports, transports (APC, T-Copter, Lander, Cruiser), join, sub dive,
-  rout/hq/day-limit endings. Fuzzed for board invariants, water maps included.
+  rout/hq/day-limit endings. Fuzzed for board invariants, water maps included: `shoal fuzz` (1.2M random games
+  on random maps with every unit, 320M moves, file round trips, 0 failures, 2026-10-29).
 - Ply search + exact solver (`shoal search --solve`), bucketed table. Tiny results in `docs/findings.md`.
 - Turn planner: beats the ply search and greedy; deeper is better (findings). ~30k candidate
   turns/s on a 16x16 mid-game (5-7 turns deep in 1 s), threaded root search for analysis.

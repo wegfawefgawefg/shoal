@@ -24,7 +24,8 @@ void PrintUsage() {
                 "  shoal genmap [--size N] [--seed S] [--days D] [--bases B] [--water]\n"
                 "  shoal tune [--rounds N] [--maps M] [--threads T] [--time S] [--rate R]\n"
                 "  shoal stats <games or dirs...>  builds, trades and results over games\n"
-                "  shoal dataset <games or dirs...> --out rows.csv  turn-start features\n");
+                "  shoal dataset <games or dirs...> --out rows.csv  turn-start features\n"
+                "  shoal fuzz [--games N] [--seed S] [--threads T]  random games, board checks\n");
 }
 
 } // namespace
@@ -76,6 +77,9 @@ int main(int argc, char** argv) {
     }
     if (command == "dataset") {
         return shoal::RunDataset(argc - 2, argv + 2);
+    }
+    if (command == "fuzz") {
+        return shoal::RunFuzz(argc - 2, argv + 2);
     }
     std::fprintf(stderr, "unknown command %s\n", command.c_str());
     PrintUsage();
